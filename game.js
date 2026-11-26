@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.7';
-import { sound } from './audio.js?v=2.7';
+import { ICONS } from './icons.js?v=2.8';
+import { sound } from './audio.js?v=2.8';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -645,6 +645,9 @@ function createInitialState() {
     crates: [],
     crateTimer: 16,
     overdriveTimer: 0,
+    ripples: [],
+    shootingStars: [],
+    shootingStarTimer: 4.5,
     // Entities
     enemies: [],
     sinking: [],
@@ -722,6 +725,7 @@ function addPopup(x, y, text, color = '#ffffff', size = 14) {
 }
 function spawnParticles(x, y, count, opts = {}) {
   const { color = '#ffffff', speed = 160, gravity = 380, size = 3, life = 0.65, spread = Math.PI * 2, angle = -Math.PI / 2 } = opts;
+  if (state.particles.length > 220) state.particles.splice(0, state.particles.length - 180);
   for (let i = 0; i < count; i++) {
     const a = angle + (Math.random() - 0.5) * spread;
     const sp = speed * (0.35 + Math.random() * 0.85);
@@ -733,6 +737,7 @@ function spawnParticles(x, y, count, opts = {}) {
   }
 }
 function spawnDebris(x, y, count, color, vxBias = 60) {
+  if (state.debris.length > 60) state.debris.splice(0, state.debris.length - 45);
   for (let i = 0; i < count; i++) {
     state.debris.push({
       x, y,
@@ -749,6 +754,8 @@ function spawnDebris(x, y, count, color, vxBias = 60) {
 }
 function spawnWaterSplash(x, power = 1) {
   const sy = getWaveY(x);
+  if (state.ripples.length > 24) state.ripples.shift();
+  state.ripples.push({ x, y: sy + 4, r: 6, maxR: 26 + 22 * power, life: 0.75, maxLife: 0.75 });
   spawnParticles(x, sy, Math.round(10 * power), {
     color: 'rgba(255,255,255,0.85)', speed: 155 * power, gravity: 480,
     size: 3.1, life: 0.6, spread: Math.PI * 0.65, angle: -Math.PI / 2,
@@ -2636,6 +2643,35 @@ function updateVisualSubsystems(dt) {
     if (pp.life <= 0) state.popups.splice(i, 1);
   }
 
+  // Water Ripples
+  for (let i = state.ripples.length - 1; i >= 0; i--) {
+    const rp = state.ripples[i];
+    rp.life -= dt;
+    rp.r = rp.maxR * (1 - rp.life / rp.maxLife);
+    if (rp.life <= 0) state.ripples.splice(i, 1);
+  }
+
+  // Shooting Stars
+  state.shootingStarTimer -= dt;
+  if (state.shootingStarTimer <= 0) {
+    state.shootingStarTimer = 7 + Math.random() * 10;
+    state.shootingStars.push({
+      x: L.worldW * (0.35 + Math.random() * 0.6),
+      y: 25 + Math.random() * 90,
+      vx: -420 - Math.random() * 180,
+      vy: 140 + Math.random() * 90,
+      life: 0.55,
+      maxLife: 0.55,
+    });
+  }
+  for (let i = state.shootingStars.length - 1; i >= 0; i--) {
+    const ss = state.shootingStars[i];
+    ss.life -= dt;
+    ss.x += ss.vx * dt;
+    ss.y += ss.vy * dt;
+    if (ss.life <= 0) state.shootingStars.splice(i, 1);
+  }
+
   // Coastal Seabirds
   state.birds.forEach((b) => {
     b.phase += dt * 5;
@@ -2795,6 +2831,37 @@ function drawBackgroundDecor() {
 
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
   ctx.beginPath(); ctx.arc(moonX, moonY, 24, 0, Math.PI * 2); ctx.fill();
+
+  // Shooting Stars
+  state.shootingStars.forEach((ss) => {
+    const a = clamp(ss.life / ss.maxLife, 0, 1);
+    ctx.strokeStyle = `rgba(255,255,255,${0.8 * a})`;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(ss.x, ss.y);
+    ctx.lineTo(ss.x - ss.vx * 0.09, ss.y - ss.vy * 0.09);
+    ctx.stroke();
+  });
+
+  // Sweeping Tower Searchlight Cone across the dark sea
+  if (!state.collapsing) {
+    const sx = L.towerX + L.towerW * 0.35;
+    const sy = L.towerTopY + 18;
+    const sweepAng = 0.22 + Math.sin(t * 0.45) * 0.16;
+    const beamLen = L.worldW * 0.72;
+    const bx1 = sx + Math.cos(sweepAng - 0.08) * beamLen;
+    const by1 = sy + Math.sin(sweepAng - 0.08) * beamLen;
+    const bx2 = sx + Math.cos(sweepAng + 0.08) * beamLen;
+    const by2 = sy + Math.sin(sweepAng + 0.08) * beamLen;
+    const beamGrad = ctx.createLinearGradient(sx, sy, (bx1 + bx2) * 0.5, (by1 + by2) * 0.5);
+    beamGrad.addColorStop(0, 'rgba(255,255,255,0.09)');
+    beamGrad.addColorStop(0.55, 'rgba(255,255,255,0.03)');
+    beamGrad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = beamGrad;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy); ctx.lineTo(bx1, by1); ctx.lineTo(bx2, by2); ctx.closePath();
+    ctx.fill();
+  }
 
   // Gliding Coastal Seabirds
   ctx.strokeStyle = 'rgba(255,255,255,0.34)';
@@ -3099,6 +3166,16 @@ function drawSeaFront() {
     if (x === -160) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
+
+  // Expanding Elliptical Water Ripple Rings
+  state.ripples.forEach((rp) => {
+    const a = clamp(rp.life / rp.maxLife, 0, 1);
+    ctx.strokeStyle = `rgba(255,255,255,${0.55 * a})`;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(rp.x, rp.y, rp.r, rp.r * 0.24, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  });
 
   // Shimmering Moonlight Reflection Path on Water
   const moonX = L.worldW * 0.77;
@@ -3748,9 +3825,19 @@ function drawAimTrajectory() {
   const sy = L.catapultY - 12;
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.32)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]);
-  ctx.beginPath(); ctx.moveTo(state.aimStartX, state.aimStartY); ctx.lineTo(state.aimCurrX, state.aimCurrY); ctx.stroke();
-  ctx.setLineDash([]);
+  const pullDist = Math.hypot(state.aimStartX - state.aimCurrX, state.aimStartY - state.aimCurrY);
+  if (pullDist >= 14) {
+    const powerPct = clamp(Math.hypot(state.aimVx, state.aimVy) / 1150, 0.1, 1);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(state.aimStartX, state.aimStartY, 26, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.arc(state.aimStartX, state.aimStartY, 26, -Math.PI * 0.5, -Math.PI * 0.5 + Math.PI * 2 * powerPct); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.38)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(state.aimStartX, state.aimStartY); ctx.lineTo(state.aimCurrX, state.aimCurrY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(state.aimCurrX, state.aimCurrY, 4.5, 0, Math.PI * 2); ctx.fill();
+  }
 
   // Wind-accurate parabolic trajectory preview!
   for (let step = 1; step <= 26; step++) {
@@ -3946,3 +4033,9 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && state && !state.paused && !state.shopOpen && !state.lbOpen && !state.gameOver && !state.collapsing) {
+    togglePause();
+  }
+});
