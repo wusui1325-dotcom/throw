@@ -1,11 +1,152 @@
-import { ICONS } from './icons.js?v=2.8';
-import { sound } from './audio.js?v=2.8';
+import { ICONS } from './icons.js?v=2.9';
+import { sound } from './audio.js?v=2.9';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
 // ============================================================
 const GRAVITY = 820;
 const API_BASE = location.hostname === 'throw.wusper.com' ? '' : 'https://throw.wusper.com';
+const SAVE_KEY = 'throw_autosave_v1';
+let autoSaveAccum = 0;
+
+function saveProgress() {
+  if (!state || state.gameOver || state.collapsing || state.elapsed < 0.5) return;
+  try {
+    const payload = {
+      v: 1,
+      elapsed: state.elapsed,
+      intensity: state.intensity,
+      coins: state.coins,
+      kills: state.kills,
+      combo: state.combo,
+      maxCombo: state.maxCombo,
+      comboTimer: state.comboTimer,
+      towerTier: state.towerTier,
+      towerHp: state.towerHp,
+      towerMaxHp: state.towerMaxHp,
+      towerArmor: state.towerArmor,
+      towerDents: state.towerDents,
+      towerCracks: state.towerCracks,
+      shieldTimer: state.shieldTimer,
+      slowmoTimer: state.slowmoTimer,
+      overdriveTimer: state.overdriveTimer,
+      rushTimer: state.rushTimer,
+      selectedProj: state.selectedProj,
+      projectiles: state.projectiles,
+      skills: state.skills,
+      addons: state.addons,
+      forge: state.forge,
+      weatherIdx: state.weatherIdx,
+      weatherTimer: state.weatherTimer,
+      windX: state.windX,
+      targetWindX: state.targetWindX,
+      spawnTimer: state.spawnTimer,
+      hasSpawnedAny: state.hasSpawnedAny,
+      bossTimer: state.bossTimer,
+      crateTimer: state.crateTimer,
+      mines: state.mines,
+      crates: state.crates,
+      enemies: state.enemies.map((e) => ({
+        id: e.id, type: e.type, x: e.x, y: e.y, hp: e.hp, maxHp: e.maxHp,
+        armor: e.armor, speed: e.speed, damage: e.damage, stopX: e.stopX,
+        stopped: e.stopped, attackTimer: e.attackTimer, windup: e.windup,
+        fireRecoil: e.fireRecoil, bounty: e.bounty, burnTimer: e.burnTimer,
+        burnDps: e.burnDps, freezeTimer: e.freezeTimer || 0, bobPhase: e.bobPhase,
+        listAngle: e.listAngle, cracks: e.cracks, crew: e.crew, unmannedTimer: e.unmannedTimer,
+      })),
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(SAVE_KEY); } catch {}
+}
+
+function loadSavedProgress() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!d || d.v !== 1 || typeof d.elapsed !== 'number' || d.towerHp <= 0) return false;
+
+    const base = createInitialState();
+    Object.assign(base, {
+      elapsed: d.elapsed,
+      intensity: d.intensity || 1,
+      coins: d.coins || 0,
+      kills: d.kills || 0,
+      combo: d.combo || 0,
+      maxCombo: d.maxCombo || 0,
+      comboTimer: d.comboTimer || 0,
+      towerTier: clamp(d.towerTier || 0, 0, TOWER_TIERS.length - 1),
+      towerHp: d.towerHp,
+      towerMaxHp: d.towerMaxHp || TOWER_TIERS[d.towerTier || 0].maxHp,
+      towerArmor: d.towerArmor ?? TOWER_TIERS[d.towerTier || 0].armor,
+      towerDents: Array.isArray(d.towerDents) ? d.towerDents : [],
+      towerCracks: Array.isArray(d.towerCracks) ? d.towerCracks : [],
+      shieldTimer: d.shieldTimer || 0,
+      slowmoTimer: d.slowmoTimer || 0,
+      overdriveTimer: d.overdriveTimer || 0,
+      rushTimer: d.rushTimer || 0,
+      weatherIdx: clamp(d.weatherIdx || 0, 0, WEATHER_STATES.length - 1),
+      weatherTimer: d.weatherTimer ?? 28,
+      windX: d.windX || 0,
+      targetWindX: d.targetWindX || 0,
+      spawnTimer: d.spawnTimer ?? 1.2,
+      hasSpawnedAny: !!d.hasSpawnedAny,
+      bossTimer: d.bossTimer ?? 72,
+      crateTimer: d.crateTimer ?? 16,
+      mines: Array.isArray(d.mines) ? d.mines : [],
+      crates: Array.isArray(d.crates) ? d.crates : [],
+      hintDismissed: true,
+    });
+
+    // Merge saved projectiles, skills, addons & forge safely (forward-compatible with newly added items!)
+    if (d.projectiles) {
+      Object.keys(base.projectiles).forEach((k) => {
+        if (d.projectiles[k]) Object.assign(base.projectiles[k], d.projectiles[k]);
+      });
+    }
+    if (d.selectedProj && base.projectiles[d.selectedProj]?.unlocked) {
+      base.selectedProj = d.selectedProj;
+    }
+    if (d.skills) {
+      Object.keys(base.skills).forEach((k) => {
+        if (d.skills[k]) Object.assign(base.skills[k], d.skills[k]);
+      });
+    }
+    if (d.addons) {
+      Object.keys(base.addons).forEach((k) => {
+        if (typeof d.addons[k] === 'number') base.addons[k] = d.addons[k];
+      });
+    }
+    if (d.forge) {
+      Object.keys(base.forge).forEach((k) => {
+        if (typeof d.forge[k] === 'number') base.forge[k] = d.forge[k];
+      });
+    }
+    if (Array.isArray(d.enemies)) {
+      base.enemies = d.enemies
+        .filter((e) => e && ENEMY_TYPES[e.type])
+        .map((e) => ({ ...e, cfg: ENEMY_TYPES[e.type], hitFlash: 0 }));
+    }
+
+    state = base;
+    // Start in paused resume screen so enemies don't ambush immediately on refresh
+    state.paused = true;
+    dom.controlHint.classList.add('fade-out');
+    dom.pauseModal.querySelector('h2').textContent = '已恢復上次進度';
+    dom.pauseModal.querySelector('.modal-sub').textContent = `${TOWER_TIERS[state.towerTier].name} · Lv.${state.intensity} · ${formatTime(state.elapsed)} · ${state.coins}G`;
+    dom.pauseModal.classList.remove('hidden');
+    dom.pauseBtn.querySelector('.ico').innerHTML = ICONS.play;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const TOWER_TIERS = [
   { id: 0, name: '木塔', maxHp: 110, armor: 0, cost: 0, color: '#332b24', debrisColor: '#a88c6c', desc: '基礎原木結構高塔，中彈易碎裂掉木塊。' },
@@ -1042,6 +1183,7 @@ function openShop(tab = shopTab) {
 function closeShop() {
   state.shopOpen = false;
   dom.shopModal.classList.add('hidden');
+  saveProgress();
 }
 
 function getProjectileDamage(def, level) {
@@ -1851,6 +1993,7 @@ function damageTower(rawDmg, hitY = L.towerTopY + 70) {
 }
 
 function startTowerCollapse() {
+  clearProgress();
   state.collapsing = true;
   state.collapseTimer = 1.65;
   state.shake = 18;
@@ -2430,6 +2573,12 @@ function update(dt) {
 
   updateVisualSubsystems(dt);
   updateHud();
+
+  autoSaveAccum += dt;
+  if (autoSaveAccum >= 2.0) {
+    autoSaveAccum = 0;
+    saveProgress();
+  }
 }
 
 function updateTowerAddons(dt) {
@@ -3967,6 +4116,11 @@ window.addEventListener('keydown', (e) => {
 function togglePause() {
   if (state.shopOpen || state.lbOpen || state.gameOver) return;
   state.paused = !state.paused;
+  if (state.paused) {
+    saveProgress();
+    dom.pauseModal.querySelector('h2').textContent = '戰場已暫停';
+    dom.pauseModal.querySelector('.modal-sub').textContent = '進度已自動保存，隨時可繼續守衛';
+  }
   dom.pauseModal.classList.toggle('hidden', !state.paused);
   dom.pauseBtn.querySelector('.ico').innerHTML = state.paused ? ICONS.play : ICONS.pause;
 }
@@ -3977,7 +4131,10 @@ function toggleSound() {
 }
 
 function restartGame() {
+  clearProgress();
   state = createInitialState();
+  dom.pauseModal.querySelector('h2').textContent = '戰場已暫停';
+  dom.pauseModal.querySelector('.modal-sub').textContent = '海浪靜止，隨時準備再次開火';
   dom.shopModal.classList.add('hidden');
   dom.leaderboardModal.classList.add('hidden');
   dom.pauseModal.classList.add('hidden');
@@ -4019,7 +4176,9 @@ hydrateStaticIcons();
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-state = createInitialState();
+if (!loadSavedProgress()) {
+  state = createInitialState();
+}
 renderProjectileDock();
 renderSkillDock();
 updateHud();
@@ -4035,7 +4194,10 @@ function loop(ts) {
 requestAnimationFrame(loop);
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && state && !state.paused && !state.shopOpen && !state.lbOpen && !state.gameOver && !state.collapsing) {
-    togglePause();
+  if (document.hidden && state && !state.gameOver && !state.collapsing) {
+    saveProgress();
+    if (!state.paused && !state.shopOpen && !state.lbOpen) togglePause();
   }
 });
+window.addEventListener('pagehide', saveProgress);
+window.addEventListener('beforeunload', saveProgress);
