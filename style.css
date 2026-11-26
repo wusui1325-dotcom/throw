@@ -160,12 +160,16 @@ button.icon-pill:active {
 /* Top-Left Projectile Dock & Top-Right Skill Dock */
 .hud-dock {
   position: fixed;
-  top: max(58px, calc(env(safe-area-inset-top) + 52px));
+  top: max(56px, calc(env(safe-area-inset-top) + 50px));
+  max-height: calc(100vh - 76px);
+  overflow-y: auto;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   z-index: 20;
 }
+.hud-dock::-webkit-scrollbar { display: none; }
 .hud-top-left {
   left: max(12px, env(safe-area-inset-left));
 }
