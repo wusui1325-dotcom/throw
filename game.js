@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.5';
-import { sound } from './audio.js?v=2.5';
+import { ICONS } from './icons.js?v=2.6';
+import { sound } from './audio.js?v=2.6';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -809,51 +809,92 @@ function renderSkillDock() {
       <span class="dock-cooldown" style="width:0%"></span>
     `;
 
-    let sx = 0, sy = 0, dragged = false;
+    let sx = 0, sy = 0, mode = 'tap'; // 'tap' | 'scroll' | 'drag'
     btn.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
       sound.init();
       if (state.gameOver || state.collapsing || state.paused || state.shopOpen || state.lbOpen) return;
-      if (ss.count <= 0) { openShop('skill'); return; }
-      if (ss.cd > 0) return;
 
-      sx = e.clientX; sy = e.clientY; dragged = false;
+      sx = e.clientX; sy = e.clientY; mode = 'tap';
+      const canDragSkill = ss.count > 0 && ss.cd <= 0;
+
+      const cleanup = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onCancel);
+        dom.skillDragGhost.classList.add('hidden');
+      };
+
+      const onCancel = () => {
+        cleanup();
+        state.draggingSkill = null;
+      };
+
       const onMove = (ev) => {
-        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 10) {
-          dragged = true;
-          state.draggingSkill = def.id;
-          state.activeTargetSkill = null;
+        const dx = ev.clientX - sx;
+        const dy = ev.clientY - sy;
+        const dist = Math.hypot(dx, dy);
+
+        if (mode === 'tap' && dist > 9) {
+          // Determine whether user is scrolling the dock or dragging a skill onto the battlefield
+          const draggingIntoField = L.isPortrait
+            ? (dy < -10 && Math.abs(dy) > Math.abs(dx))
+            : (dx < -10 && Math.abs(dx) > Math.abs(dy));
+
+          if (canDragSkill && draggingIntoField) {
+            mode = 'drag';
+            state.draggingSkill = def.id;
+            state.activeTargetSkill = null;
+            dom.skillDragGhost.innerHTML = `<span class="ico">${ICONS[def.icon]}</span>`;
+            dom.skillDragGhost.classList.remove('hidden');
+          } else {
+            mode = 'scroll';
+          }
+        }
+
+        if (mode === 'drag') {
           const wp = screenToWorld(ev.clientX, ev.clientY);
           state.pointerWorldX = wp.x;
           state.pointerWorldY = wp.y;
-          dom.skillDragGhost.innerHTML = `<span class="ico">${ICONS[def.icon]}</span>`;
           dom.skillDragGhost.style.left = `${ev.clientX}px`;
           dom.skillDragGhost.style.top = `${ev.clientY}px`;
-          dom.skillDragGhost.classList.remove('hidden');
         }
       };
+
       const onUp = (ev) => {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        dom.skillDragGhost.classList.add('hidden');
-        if (dragged) {
+        cleanup();
+        if (mode === 'scroll') return; // User was scrolling the skill dock — do not open shop or cast!
+
+        if (mode === 'drag') {
           const wp = screenToWorld(ev.clientX, ev.clientY);
           state.draggingSkill = null;
           const droppedOnField = L.isPortrait ? ev.clientY < window.innerHeight - 74 : ev.clientX < window.innerWidth - 70;
           if (droppedOnField || !def.targeted) castSkill(def.id, wp.x, wp.y);
+          return;
+        }
+
+        // Clean tap/click
+        if (ss.count <= 0) {
+          openShop('skill');
+          return;
+        }
+        if (ss.cd > 0) return;
+
+        if (!def.targeted) {
+          castSkill(def.id, L.towerX, L.towerTopY);
+        } else if (state.activeTargetSkill === def.id) {
+          cancelSkillTargeting();
         } else {
-          if (!def.targeted) castSkill(def.id, L.towerX, L.towerTopY);
-          else if (state.activeTargetSkill === def.id) cancelSkillTargeting();
-          else {
-            state.activeTargetSkill = def.id;
-            dom.targetHintText.textContent = `點擊戰場施放「${def.name}」`;
-            dom.targetHint.classList.remove('hidden');
-            updateDockDisplays();
-          }
+          state.activeTargetSkill = def.id;
+          dom.targetHintText.textContent = `點擊戰場施放「${def.name}」`;
+          dom.targetHint.classList.remove('hidden');
+          updateDockDisplays();
         }
       };
+
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onCancel);
     });
 
     btn.dataset.skillId = def.id;
