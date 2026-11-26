@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.9';
-import { sound } from './audio.js?v=2.9';
+import { ICONS } from './icons.js?v=2.10';
+import { sound } from './audio.js?v=2.10';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -1613,8 +1613,8 @@ function castSkill(id, wx) {
     state.lightningFlash = 0.35;
     state.shake = Math.min(18, state.shake + 12);
     sound.playExplosion();
-    for (let j = state.enemies.length - 1; j >= 0; j--) {
-      const e = state.enemies[j];
+    for (const e of [...state.enemies]) {
+      if (!e || !state.enemies.includes(e)) continue;
       if (Math.abs(e.x - tx) <= 115 + e.cfg.width * 0.45) {
         damageEnemyHull(e, dmg, { ignoreArmor: true, breachForce: true, hitX: e.x, hitY: e.y - 16 });
       }
@@ -1824,8 +1824,8 @@ function sinkEnemyShip(enemy, splitSnap = false) {
   if (enemy.cfg.explosive) {
     spawnExplosion(enemy.x, enemy.y - 12, 155, true);
     addPopup(enemy.x, enemy.y - 52, '火藥艙連鎖大爆炸！', '#ffb142', 16);
-    for (let j = state.enemies.length - 1; j >= 0; j--) {
-      const other = state.enemies[j];
+    for (const other of [...state.enemies]) {
+      if (!other || !state.enemies.includes(other)) continue;
       if (Math.hypot(other.x - enemy.x, other.y - enemy.y) < 155 + other.cfg.width * 0.4) {
         damageEnemyHull(other, 65 + state.intensity * 10, { ignoreArmor: true, burnDps: 14, burnDur: 3.5, breachForce: true });
       }
@@ -2252,8 +2252,8 @@ function update(dt) {
 
     // Hit enemies (first check high-elevation individual crew hitboxes like crow's nest, then ship hull)
     let removed = false;
-    for (let j = state.enemies.length - 1; j >= 0; j--) {
-      const e = state.enemies[j];
+    for (const e of [...state.enemies]) {
+      if (!e || !state.enemies.includes(e)) continue;
       if (p.hitIds.has(e.id)) continue;
 
       // Direct snipe check on any living crew member (including high crow's nest lookouts!)
@@ -2407,8 +2407,8 @@ function update(dt) {
 
     if (r.type === 'arrow') {
       let hit = false;
-      for (let j = state.enemies.length - 1; j >= 0; j--) {
-        const e = state.enemies[j];
+      for (const e of [...state.enemies]) {
+        if (!e || !state.enemies.includes(e)) continue;
         if (Math.abs(r.x - e.x) < e.cfg.width * 0.55 && Math.abs(r.y - (e.y - e.cfg.height * 0.5)) < e.cfg.height + 18) {
           e.crew.forEach((c) => {
             if (c.alive && Math.abs((e.x + c.ox) - r.x) < 22) killCrewMember(e, c, -60, -150, '箭雨貫穿');
@@ -2425,15 +2425,15 @@ function update(dt) {
     } else {
       spawnParticles(r.x, r.y, 1, { color: '#ffb142', speed: 40, gravity: -20, size: 3.5, life: 0.26 });
       let hitEnemy = false;
-      for (let j = state.enemies.length - 1; j >= 0; j--) {
-        const e = state.enemies[j];
+      for (const e of [...state.enemies]) {
+        if (!e || !state.enemies.includes(e)) continue;
         if (Math.hypot(r.x - e.x, r.y - (e.y - 12)) < e.cfg.width * 0.55) { hitEnemy = true; break; }
       }
       if (hitEnemy || r.y >= wy) {
         const ey = Math.min(r.y, wy);
         spawnExplosion(r.x, ey, 110, true);
-        for (let j = state.enemies.length - 1; j >= 0; j--) {
-          const e = state.enemies[j];
+        for (const e of [...state.enemies]) {
+          if (!e || !state.enemies.includes(e)) continue;
           if (Math.hypot(e.x - r.x, e.y - ey) <= 110 + e.cfg.width * 0.4) {
             damageEnemyHull(e, r.damage, { burnDps: 16, burnDur: 4.2, breachForce: true });
           }
@@ -2448,15 +2448,15 @@ function update(dt) {
     const m = state.mines[i];
     m.phase += dt * 3;
     if (m.armed > 0) { m.armed -= dt; continue; }
-    for (let j = state.enemies.length - 1; j >= 0; j--) {
-      const e = state.enemies[j];
+    for (const e of [...state.enemies]) {
+      if (!e || !state.enemies.includes(e)) continue;
       if (e.cfg.air) continue;
       if (Math.abs(e.x - m.x) < e.cfg.width * 0.5 + m.radius) {
         const wy = getWaveY(m.x);
         spawnExplosion(m.x, wy, m.aoe, false);
         spawnWaterSplash(m.x, 1.7);
-        for (let k = state.enemies.length - 1; k >= 0; k--) {
-          const t = state.enemies[k];
+        for (const t of [...state.enemies]) {
+          if (!t || !state.enemies.includes(t)) continue;
           if (t.cfg.air) continue;
           if (Math.abs(t.x - m.x) <= m.aoe + t.cfg.width * 0.4) {
             t.x += 44;
@@ -2472,6 +2472,7 @@ function update(dt) {
   // Update Enemies
   for (let i = state.enemies.length - 1; i >= 0; i--) {
     const e = state.enemies[i];
+    if (!e) continue;
     e.bobPhase += dt * 3.2;
     if (e.hitFlash > 0) e.hitFlash -= dt;
 
@@ -2615,7 +2616,7 @@ function updateTowerAddons(dt) {
         state.aaTimer = Math.max(0.4, 1.7 - lv * 0.26);
         state.tracers.push({ x1: ax, y1: ay, x2: threat.x, y2: threat.y, life: 0.16, color: '#a5f3fc' });
         spawnParticles(threat.x, threat.y, 10, { color: '#ffffff', speed: 120, life: 0.35 });
-        state.enemyProjs.splice(state.enemyProjs.indexOf(threat), 1);
+        const tidx = state.enemyProjs.indexOf(threat); if (tidx !== -1) state.enemyProjs.splice(tidx, 1);
       } else {
         // Priority 2: Airships
         const airTarget = state.enemies.find((e) => e.cfg.air);
@@ -2751,8 +2752,8 @@ function updateVisualSubsystems(dt) {
       }
     }
     // Knockback & damage surface ships
-    for (let j = state.enemies.length - 1; j >= 0; j--) {
-      const e = state.enemies[j];
+    for (const e of [...state.enemies]) {
+      if (!e || !state.enemies.includes(e)) continue;
       if (e.cfg.air || wv.hitIds.has(e.id)) continue;
       if (Math.abs(e.x - wv.x) < wv.width * 0.65 + e.cfg.width * 0.4) {
         wv.hitIds.add(e.id);
@@ -2847,8 +2848,8 @@ function detonatePlayerProj(p) {
   if (isFrost) {
     spawnParticles(p.x, p.y, 20, { color: '#a5f3fc', speed: 200, gravity: 90, size: 4, life: 0.75 });
   }
-  for (let j = state.enemies.length - 1; j >= 0; j--) {
-    const e = state.enemies[j];
+  for (const e of [...state.enemies]) {
+    if (!e || !state.enemies.includes(e)) continue;
     const dist = Math.hypot(e.x - p.x, (e.y - e.cfg.height * 0.4) - p.y);
     if (dist <= p.aoe + e.cfg.width * 0.44) {
       const falloff = 1 - (dist / (p.aoe + e.cfg.width * 0.5)) * 0.35;
@@ -4057,7 +4058,7 @@ canvas.addEventListener('pointerdown', (e) => {
   const q = solveQuickBallistic(wp.x, wp.y);
   state.aimVx = q.vx;
   state.aimVy = q.vy;
-  canvas.setPointerCapture(e.pointerId);
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
 });
 
 canvas.addEventListener('pointermove', (e) => {
@@ -4185,11 +4186,15 @@ updateHud();
 
 let lastTs = performance.now();
 function loop(ts) {
-  const dt = Math.min(0.05, (ts - lastTs) / 1000);
-  lastTs = ts;
-  update(dt);
-  render();
   requestAnimationFrame(loop);
+  const dt = Math.max(0, Math.min(0.05, (ts - lastTs) / 1000));
+  lastTs = ts;
+  try {
+    update(dt);
+    render();
+  } catch (err) {
+    console.error('[THROW] recovered frame error:', err);
+  }
 }
 requestAnimationFrame(loop);
 
