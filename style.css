@@ -163,6 +163,8 @@ button.icon-pill:active {
   top: max(56px, calc(env(safe-area-inset-top) + 50px));
   max-height: calc(100vh - 76px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   scrollbar-width: none;
   display: flex;
   flex-direction: column;
@@ -460,6 +462,7 @@ button.icon-pill:active {
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.02);
   overflow-x: auto;
+  touch-action: pan-x;
 }
 .shop-tab {
   flex: 1;
@@ -492,6 +495,8 @@ button.icon-pill:active {
 .shop-body {
   padding: 16px 20px 20px;
   overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
@@ -603,6 +608,8 @@ button.icon-pill:active {
 .lb-body {
   padding: 14px 18px 20px;
   overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -740,6 +747,8 @@ button.icon-pill:active {
     gap: 6px;
     max-width: calc(50vw - 14px);
     overflow-x: auto;
+    overflow-y: hidden;
+    touch-action: pan-x;
     scrollbar-width: none;
   }
   .hud-dock::-webkit-scrollbar { display: none; }
