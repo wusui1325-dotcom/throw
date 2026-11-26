@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.3';
-import { sound } from './audio.js?v=2.3';
+import { ICONS } from './icons.js?v=2.4';
+import { sound } from './audio.js?v=2.4';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -382,6 +382,18 @@ function resizeCanvas() {
   }
   L.catapultX = L.towerX + 6;
   L.catapultY = L.towerTopY - 12;
+
+  if (state && state.enemies) {
+    const towerEdge = L.towerX + L.towerW * 0.5;
+    const span = Math.max(180, L.worldW - towerEdge);
+    const minS = towerEdge + span * 0.15;
+    const maxS = L.worldW - span * 0.15;
+    state.enemies.forEach((e) => {
+      e.stopX = clamp(e.stopX, minS, maxS);
+      if (e.stopped) e.x = clamp(e.x, minS, maxS);
+      if (e.cfg.air) e.y = clamp(e.y, 90, L.seaY - 160);
+    });
+  }
 }
 
 function screenToWorld(clientX, clientY) {
@@ -1689,14 +1701,42 @@ function update(dt) {
     }
     if (intercepted) continue;
 
-    // Hit enemies
+    // Hit enemies (first check high-elevation individual crew hitboxes like crow's nest, then ship hull)
     let removed = false;
     for (let j = state.enemies.length - 1; j >= 0; j--) {
       const e = state.enemies[j];
       if (p.hitIds.has(e.id)) continue;
 
+      // Direct snipe check on any living crew member (including high crow's nest lookouts!)
+      let snipedCrew = false;
+      for (const c of e.crew) {
+        if (!c.alive) continue;
+        const cx = e.x + c.ox;
+        const cy = e.y + c.oy - 14;
+        if (Math.hypot(p.x - cx, p.y - cy) < p.r + 17) {
+          p.hasHitAnything = true;
+          if (p.type === 'bomb' || p.type === 'fire') {
+            detonatePlayerProj(p);
+            state.playerProjs.splice(i, 1);
+            removed = true;
+            snipedCrew = true;
+            break;
+          }
+          killCrewMember(e, c, p.vx * 0.42, -220, '精準狙殺！');
+          p.vx *= 0.72;
+          p.vy *= 0.72;
+          snipedCrew = true;
+          break;
+        }
+      }
+      if (removed) break;
+      if (snipedCrew && !p.isShard && p.type !== 'spike') {
+        p.hitIds.add(e.id);
+        continue;
+      }
+
       const halfW = e.cfg.width * 0.52;
-      const topY = e.cfg.air ? e.y - e.cfg.height * 0.55 : e.y - e.cfg.height - 28;
+      const topY = e.cfg.air ? e.y - e.cfg.height * 0.55 : e.y - e.cfg.height - 22;
       const botY = e.cfg.air ? e.y + e.cfg.height * 0.55 : e.y + 8;
 
       if (p.x + p.r >= e.x - halfW && p.x - p.r <= e.x + halfW && p.y + p.r >= topY && p.y - p.r <= botY) {
@@ -2589,13 +2629,20 @@ function drawDeckTurret(ox, oy, scale = 1, windup = 0, recoil = 0) {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(-21, -5, 3, 10);
 
-  // Pre-fire fuse spark on breech!
+  // Pre-fire fuse spark on breech + muzzle charge ring right before firing!
   if (windup > 0.15) {
     const pulse = 0.7 + Math.sin(state.elapsed * 28) * 0.3;
     ctx.fillStyle = windup > 0.75 ? '#ff7675' : '#ffeaa7';
     ctx.beginPath();
     ctx.arc(3, -5, (2.2 + windup * 2.4) * pulse, 0, Math.PI * 2);
     ctx.fill();
+    if (windup > 0.65) {
+      ctx.strokeStyle = 'rgba(255, 118, 117, 0.85)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(-21, 0, 5 + (1 - windup) * 14, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
   ctx.restore();
   ctx.restore();
@@ -2634,9 +2681,7 @@ function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks =
     return;
   }
 
-  // Draw surviving pirate crew (with pre-fire gunner animation) & deck turrets
-  crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, c.oy, windup, c.gunner); });
-  (cfg.turrets || []).forEach((tr) => drawDeckTurret(tr.ox, tr.oy, tr.scale, windup, recoil));
+
 
   const billow = -18 + state.windX * 0.12;
   ctx.fillStyle = hullFill;
@@ -2793,6 +2838,10 @@ function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks =
       ctx.stroke();
     });
   }
+
+  // Draw surviving pirate crew & deck turrets ON TOP of hull/sails for crisp readability
+  crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, c.oy, windup, c.gunner); });
+  (cfg.turrets || []).forEach((tr) => drawDeckTurret(tr.ox, tr.oy, tr.scale, windup, recoil));
   ctx.restore();
 }
 
