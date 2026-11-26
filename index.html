@@ -4,25 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>THROW — 無盡投石守塔</title>
-  <meta name="description" content="免費開源的無盡投石車海戰守塔網頁遊戲。操作高塔投石車擊沉海盜船、升級九階防禦塔、切換多元投擲物與戰術技能。" />
+  <meta name="description" content="免費開源的物理破壞無盡投石守塔網頁遊戲。動態石塊碎裂滾壓、可破壞高塔結構、天氣風向物理、自動塔樓掛件與全球排行榜。" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Top-Left: Projectile Switcher -->
+    <!-- Top-Left (Bottom-Left in Portrait): Projectile Switcher -->
     <div id="projectileDock" class="hud-dock hud-top-left" aria-label="投擲物切換"></div>
 
-    <!-- Top-Center: Streamlined Monochrome Status Bar -->
+    <!-- Top-Center: Streamlined Monochrome Status Bar (NO HP Numbers!) -->
     <header id="topBar" class="hud-top-center">
-      <div class="stat-pill" id="hpPill" title="塔的耐久度">
-        <span class="ico" data-icon="hp"></span>
-        <div class="hp-wrap">
-          <div class="hp-bar-track"><div id="hpBarFill" class="hp-bar-fill"></div></div>
-          <span id="hpText" class="stat-val">100 / 100</span>
-        </div>
-        <span id="towerTierBadge" class="tier-badge">木塔</span>
+      <div class="stat-pill" id="towerPill" title="目前塔樓材質">
+        <span class="ico" id="towerTierIcon" data-icon="tower_0"></span>
+        <span id="towerTierBadge" class="stat-val">木塔</span>
       </div>
 
       <div class="stat-pill" title="金幣">
@@ -33,6 +29,11 @@
       <div class="stat-pill" title="當前強度等級">
         <span class="ico" data-icon="intensity"></span>
         <span id="intensityText" class="stat-val">Lv.1</span>
+      </div>
+
+      <div class="stat-pill" id="weatherPill" title="天氣與風向">
+        <span class="ico" id="weatherIcon" data-icon="weather_clear"></span>
+        <span id="weatherText" class="stat-val">晴夜</span>
       </div>
 
       <div class="stat-pill hide-xs" title="存活時間">
@@ -50,6 +51,10 @@
         <span class="btn-label">商店</span>
       </button>
 
+      <button id="leaderboardBtn" class="icon-pill" title="全球排行榜 [L]" aria-label="全球排行榜">
+        <span class="ico" data-icon="trophy"></span>
+      </button>
+
       <button id="pauseBtn" class="icon-pill" title="暫停 / 繼續 [P]" aria-label="暫停">
         <span class="ico" data-icon="pause"></span>
       </button>
@@ -59,8 +64,15 @@
       </button>
     </header>
 
-    <!-- Top-Right: Skills Dock (Drag or Click) -->
+    <!-- Top-Right (Bottom-Right in Portrait): Skills Dock (Drag or Click) -->
     <div id="skillDock" class="hud-dock hud-top-right" aria-label="技能欄"></div>
+
+    <!-- Combo Pill -->
+    <div id="comboBanner" class="combo-banner hidden">
+      <span class="ico" data-icon="combo"></span>
+      <span id="comboText">COMBO ×1.0</span>
+      <div class="combo-track"><div id="comboFill" class="combo-fill"></div></div>
+    </div>
 
     <!-- Clear Rush x3 Banner -->
     <div id="rushBanner" class="rush-banner hidden">
@@ -78,15 +90,15 @@
     <!-- Skill Targeting Hint -->
     <div id="targetHint" class="target-hint hidden">
       <span class="ico" data-icon="ammoTab"></span>
-      <span id="targetHintText">點擊或拖曳至戰場位置施放技能（右鍵/ESC 取消）</span>
+      <span id="targetHintText">點擊或拖曳至戰場施放技能</span>
       <button id="cancelTargetBtn" class="mini-pill">
         <span class="ico" data-icon="close"></span>
       </button>
     </div>
 
-    <!-- Subtle Control Hint (fades out after first throw) -->
+    <!-- Subtle Control Hint -->
     <div id="controlHint" class="control-hint">
-      <span>按住畫面往左下拉曳瞄準投擲 · 或點擊海盜直接拋射 · [S] 商店 · [1-5] 切換彈藥</span>
+      <span>往左下拉曳蓄力投擲 · 或點擊海盜直接拋射 · 注意風向與塔身裂縫</span>
     </div>
 
     <!-- Drag Ghost for Skills -->
@@ -121,15 +133,40 @@
           </button>
           <button class="shop-tab" data-tab="projectile" role="tab">
             <span class="ico" data-icon="ammoTab"></span>
-            <span>投擲物變更</span>
+            <span>投擲物</span>
           </button>
           <button class="shop-tab" data-tab="skill" role="tab">
             <span class="ico" data-icon="skillTab"></span>
-            <span>戰術技能</span>
+            <span>技能</span>
+          </button>
+          <button class="shop-tab" data-tab="addon" role="tab">
+            <span class="ico" data-icon="addonTab"></span>
+            <span>塔樓掛件</span>
           </button>
         </nav>
 
         <div id="shopBody" class="shop-body"></div>
+      </div>
+    </div>
+
+    <!-- Global Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="lbTitle">
+      <div class="modal-panel lb-panel">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="ico lg" data-icon="trophy"></span>
+            <div>
+              <h2 id="lbTitle">全球無盡排行榜</h2>
+              <p class="modal-sub">Cloudflare KV 即時同步 · 依存活時間排序</p>
+            </div>
+          </div>
+          <button id="closeLbBtn" class="icon-pill" title="關閉 [ESC]">
+            <span class="ico" data-icon="close"></span>
+          </button>
+        </div>
+        <div id="lbBody" class="lb-body">
+          <p class="lb-empty">載入中...</p>
+        </div>
       </div>
     </div>
 
@@ -152,12 +189,12 @@
       </div>
     </div>
 
-    <!-- Game Over Overlay -->
+    <!-- Game Over Overlay + Leaderboard Submission -->
     <div id="gameOverModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
       <div class="modal-panel compact-panel">
         <div class="compact-icon" data-icon="skull"></div>
-        <h2>高塔陷落</h2>
-        <p class="modal-sub">無盡海盜攻勢突破了防線</p>
+        <h2>高塔崩塌</h2>
+        <p class="modal-sub">結構已無法支撐無盡砲火</p>
         <div class="summary-grid">
           <div class="summary-card">
             <span class="ico" data-icon="clock"></span>
@@ -175,15 +212,29 @@
             <strong id="finalKills">0</strong>
           </div>
           <div class="summary-card">
-            <span class="ico" data-icon="trophy"></span>
-            <span class="summary-label">歷史最佳</span>
-            <strong id="bestRecord">00:00</strong>
+            <span class="ico" data-icon="combo"></span>
+            <span class="summary-label">最高連擊</span>
+            <strong id="finalCombo">0</strong>
           </div>
         </div>
+
+        <div class="lb-submit-row">
+          <input id="playerNameInput" class="name-input" type="text" maxlength="16" placeholder="輸入暱稱登上全球榜..." />
+          <button id="submitScoreBtn" class="action-pill primary">
+            <span class="ico" data-icon="upload"></span>
+            <span>上傳</span>
+          </button>
+        </div>
+        <p id="submitStatus" class="submit-status hidden"></p>
+
         <div class="modal-actions">
           <button id="restartBtn" class="action-pill primary lg">
             <span class="ico" data-icon="restart"></span>
             <span>再戰一局</span>
+          </button>
+          <button id="goLbBtn" class="action-pill lg">
+            <span class="ico" data-icon="trophy"></span>
+            <span>排行榜</span>
           </button>
         </div>
       </div>
