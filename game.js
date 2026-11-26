@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.4';
-import { sound } from './audio.js?v=2.4';
+import { ICONS } from './icons.js?v=2.5';
+import { sound } from './audio.js?v=2.5';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -95,6 +95,52 @@ const PROJECTILE_DEFS = [
     radius: 12,
     desc: '烈焰投擲物，濺射並點燃敵船甲板與船帆造成持續灼燒。',
   },
+  {
+    id: 'chain',
+    name: '鎖鏈彈',
+    short: '鎖鏈彈',
+    icon: 'proj_chain',
+    key: '6',
+    unlockCost: 390,
+    upgradeBase: 210,
+    reload: 1.1,
+    maxCharges: 2,
+    damage: 34,
+    pierce: 4,
+    radius: 22,
+    desc: '旋轉雙鐵球鎖鏈，橫掃範圍極廣，專克高空瞭望台與密集船員。',
+  },
+  {
+    id: 'cluster',
+    name: '集束彈',
+    short: '集束彈',
+    icon: 'proj_cluster',
+    key: '7',
+    unlockCost: 480,
+    upgradeBase: 240,
+    reload: 1.45,
+    maxCharges: 2,
+    damage: 32,
+    aoe: 72,
+    radius: 13,
+    desc: '飛越最高點下落時自動於半空分裂成 5 顆破片炸彈覆蓋海面。',
+  },
+  {
+    id: 'frost',
+    name: '冰霜巨石',
+    short: '冰霜石',
+    icon: 'proj_frost',
+    key: '8',
+    unlockCost: 560,
+    upgradeBase: 260,
+    reload: 1.35,
+    maxCharges: 2,
+    damage: 40,
+    aoe: 118,
+    freezeDur: 4.2,
+    radius: 13,
+    desc: '極寒巨石，命中爆發冰霧凍結範圍內敵艦 4.2 秒，中斷所有砲擊。',
+  },
 ];
 
 const SKILL_DEFS = [
@@ -151,6 +197,37 @@ const SKILL_DEFS = [
     targetType: 'sea',
     desc: '拖曳或點擊投放至海面，敵船觸碰立即從船底炸裂沉沒。',
   },
+  {
+    id: 'wave',
+    name: '巨浪衝擊',
+    short: '巨浪',
+    icon: 'skill_wave',
+    cost: 135,
+    cooldown: 9,
+    targeted: false,
+    desc: '自高塔掀起巨型海嘯浪牆向右橫掃，大幅擊退敵艦並清空空中砲彈。',
+  },
+  {
+    id: 'lightning',
+    name: '雷霆審判',
+    short: '落雷',
+    icon: 'skill_lightning',
+    cost: 125,
+    cooldown: 5,
+    targeted: true,
+    targetType: 'air',
+    desc: '拖曳或點擊指定目標海域降下高壓落雷（暴風雨天氣傷害額外 +50%）。',
+  },
+  {
+    id: 'slowmo',
+    name: '時間緩速',
+    short: '緩速',
+    icon: 'skill_slowmo',
+    cost: 140,
+    cooldown: 11,
+    targeted: false,
+    desc: '未來 6 秒內所有敵艦、砲手與飛來砲彈速度降至 30%，從容反擊。',
+  },
 ];
 
 const ADDON_DEFS = [
@@ -177,6 +254,65 @@ const ADDON_DEFS = [
     baseCost: 120,
     maxLv: 3,
     desc: '自動吸附戰場掉落的實體金幣，並額外提升金幣收益倍率。',
+  },
+  {
+    id: 'repairbot',
+    name: '自動修復工匠',
+    icon: 'addon_repairbot',
+    baseCost: 160,
+    maxLv: 5,
+    desc: '駐守塔內的機械工匠，持續修補高塔結構裂縫與砲彈凹陷。',
+  },
+  {
+    id: 'mortar',
+    name: '岸防迫擊砲',
+    icon: 'addon_mortar',
+    baseCost: 230,
+    maxLv: 5,
+    desc: '架設於塔身中段的自動迫擊砲，定時朝遠處敵艦發射高拋重砲。',
+  },
+  {
+    id: 'stabilizer',
+    name: '風力穩定器',
+    icon: 'addon_stabilizer',
+    baseCost: 150,
+    maxLv: 4,
+    desc: '大幅抵消強側風對投石彈道的干擾（滿級完全無視風偏）。',
+  },
+];
+
+const FORGE_DEFS = [
+  {
+    id: 'power',
+    name: '重型絞盤',
+    icon: 'forge_power',
+    baseCost: 110,
+    maxLv: 5,
+    desc: '強化投石機扭力，永久提升所有投擲物破壞力（每級 +14%）。',
+  },
+  {
+    id: 'reload',
+    name: '快速裝填軸',
+    icon: 'forge_reload',
+    baseCost: 130,
+    maxLv: 5,
+    desc: '優化拋射裝填機構，縮短所有投擲物充能時間（每級 -8%）。',
+  },
+  {
+    id: 'greed',
+    name: '海盜懸賞令',
+    icon: 'forge_greed',
+    baseCost: 125,
+    maxLv: 5,
+    desc: '擊倒海盜與擊沉敵艦獲得更多懸賞金幣（每級 +15%）。',
+  },
+  {
+    id: 'plating',
+    name: '吸能複合護板',
+    icon: 'forge_plating',
+    baseCost: 145,
+    maxLv: 5,
+    desc: '吸收敵軍砲彈動能，減少高塔凹陷與結構損耗（每級減傷 9%）。',
   },
 ];
 
@@ -432,7 +568,8 @@ function createInitialState() {
     skills[def.id] = { count: 0, cd: 0 };
   });
 
-  const addons = { ballista: 0, aa: 0, magnet: 0 };
+  const addons = { ballista: 0, aa: 0, magnet: 0, repairbot: 0, mortar: 0, stabilizer: 0 };
+  const forge = { power: 0, reload: 0, greed: 0, plating: 0 };
 
   return {
     elapsed: 0,
@@ -456,8 +593,14 @@ function createInitialState() {
     projectiles,
     skills,
     addons,
+    forge,
     ballistaTimer: 0,
     aaTimer: 0,
+    mortarTimer: 0,
+    repairTick: 0,
+    slowmoTimer: 0,
+    waves: [],
+    lightningBolts: [],
     // Weather
     weatherIdx: 0,
     weatherTimer: 28,
@@ -588,7 +731,8 @@ function spawnExplosion(x, y, radius, isFire = false) {
 }
 function spawnCoinBurst(x, y, totalCoins) {
   const magnetMult = [1, 1.2, 1.45, 1.75][state.addons.magnet] || 1;
-  const finalAmount = Math.max(1, Math.round(totalCoins * getComboMultiplier() * magnetMult));
+  const greedMult = 1 + (state.forge.greed || 0) * 0.15;
+  const finalAmount = Math.max(1, Math.round(totalCoins * getComboMultiplier() * magnetMult * greedMult));
   const pieces = clamp(Math.ceil(finalAmount / 12), 2, 7);
   const perPiece = Math.floor(finalAmount / pieces);
   let rem = finalAmount - perPiece * pieces;
@@ -728,7 +872,7 @@ function updateDockDisplays() {
     const bar = btn.querySelector('.dock-cooldown');
     if (ps.unlocked) {
       sub.textContent = `${ps.charges}/${def.maxCharges}`;
-      bar.style.width = `${ps.charges >= def.maxCharges ? 100 : Math.floor((ps.timer / def.reload) * 100)}%`;
+      bar.style.width = `${ps.charges >= def.maxCharges ? 100 : Math.floor((ps.timer / getEffectiveReload(def)) * 100)}%`;
     } else {
       sub.textContent = `${def.unlockCost}G`;
       bar.style.width = '0%';
@@ -816,7 +960,16 @@ function closeShop() {
 }
 
 function getProjectileDamage(def, level) {
-  return Math.round(def.damage * (1 + (level - 1) * 0.28));
+  const forgePower = 1 + ((state && state.forge ? state.forge.power : 0) * 0.14);
+  return Math.round(def.damage * (1 + (level - 1) * 0.28) * forgePower);
+}
+function getEffectiveReload(def) {
+  const forgeReload = Math.max(0.55, 1 - ((state && state.forge ? state.forge.reload : 0) * 0.08));
+  return def.reload * forgeReload;
+}
+function getEffectiveWind() {
+  const stab = (state && state.addons ? state.addons.stabilizer : 0);
+  return state.windX * Math.max(0, 1 - stab * 0.25);
 }
 
 function renderShopBody() {
@@ -1021,6 +1174,45 @@ function renderShopBody() {
         updateHud();
       });
     });
+  } else if (shopTab === 'forge') {
+    FORGE_DEFS.forEach((def) => {
+      const lv = state.forge[def.id];
+      const cost = Math.round(def.baseCost * Math.pow(1.65, lv));
+      const card = document.createElement('div');
+      card.className = 'shop-card';
+      if (lv > 0) card.classList.add('owned-current');
+
+      const btnHtml = lv >= def.maxLv
+        ? `<button class="buy-btn equipped" disabled><span class="ico">${ICONS.check}</span><span>已達滿級</span></button>`
+        : `<button class="buy-btn" ${state.coins >= cost ? '' : 'disabled'} data-buy-forge="${def.id}">
+            <span class="ico">${ICONS.upgrade}</span><span>鍛造升級 Lv.${lv + 1} · ${cost}G</span></button>`;
+
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="card-icon"><span class="ico">${ICONS[def.icon]}</span></div>
+          <div class="card-title-wrap"><div class="card-title">${def.name} <span class="card-tag">Lv.${lv}/${def.maxLv}</span></div></div>
+        </div>
+        <p class="card-desc">${def.desc}</p>
+        ${btnHtml}
+      `;
+      dom.shopBody.appendChild(card);
+    });
+
+    dom.shopBody.querySelectorAll('[data-buy-forge]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.buyForge;
+        const def = FORGE_DEFS.find((d) => d.id === id);
+        const lv = state.forge[id];
+        const cost = Math.round(def.baseCost * Math.pow(1.65, lv));
+        if (!def || lv >= def.maxLv || state.coins < cost) return;
+        state.coins -= cost;
+        state.forge[id] += 1;
+        sound.playBuy();
+        addPopup(L.towerX, L.towerTopY - 26, `鍛造完成：${def.name}`, '#ffffff', 15);
+        renderShopBody();
+        updateHud();
+      });
+    });
   }
 }
 
@@ -1174,6 +1366,36 @@ function castSkill(id, wx) {
     });
     spawnWaterSplash(tx, 0.85);
     addPopup(tx, L.seaY - 34, '水雷已部署', '#ffffff', 14);
+  } else if (id === 'wave') {
+    state.waves.push({
+      x: L.towerX + L.towerW * 0.5,
+      vx: 460,
+      width: 68,
+      height: 110,
+      damage: Math.round(52 + state.intensity * 10),
+      hitIds: new Set(),
+    });
+    state.shake = Math.min(18, state.shake + 9);
+    spawnWaterSplash(L.towerX + 60, 1.8);
+    addPopup(L.towerX + 120, L.seaY - 90, '巨浪衝擊！', '#ffffff', 17);
+  } else if (id === 'lightning') {
+    const isStorm = WEATHER_STATES[state.weatherIdx].id === 'storm';
+    const dmg = Math.round((135 + state.intensity * 26) * (isStorm ? 1.5 : 1.0));
+    state.lightningBolts.push({ x: tx, life: 0.42, maxLife: 0.42 });
+    state.lightningFlash = 0.35;
+    state.shake = Math.min(18, state.shake + 12);
+    sound.playExplosion();
+    for (let j = state.enemies.length - 1; j >= 0; j--) {
+      const e = state.enemies[j];
+      if (Math.abs(e.x - tx) <= 115 + e.cfg.width * 0.45) {
+        damageEnemyHull(e, dmg, { ignoreArmor: true, breachForce: true, hitX: e.x, hitY: e.y - 16 });
+      }
+    }
+    spawnWaterSplash(tx, 1.5);
+    addPopup(tx, 160, isStorm ? '暴風雷霆 ×1.5！' : '雷霆審判！', '#a5f3fc', 17);
+  } else if (id === 'slowmo') {
+    state.slowmoTimer = 6.0;
+    addPopup(L.worldW * 0.5, 175, '時間緩速 · 6 秒', '#a5f3fc', 17);
   }
   updateHud();
 }
@@ -1208,6 +1430,8 @@ function fireProjectile(vx, vy) {
       hitIds: new Set(),
       burnDps: def.burnDps || 0,
       burnDur: def.burnDur || 0,
+      freezeDur: def.freezeDur || 0,
+      splitDone: false,
       rot: 0,
       trail: [],
       hasHitAnything: false,
@@ -1233,7 +1457,7 @@ function solveQuickBallistic(tx, ty) {
   const dy = ty - sy;
   const t = clamp(dx / (L.isPortrait ? 470 : 620), 0.5, 1.5);
   // Compensate slightly for wind so tap-to-throw feels responsive, while drag gives full manual mastery
-  const vx = (dx - 0.5 * state.windX * t * t) / t;
+  const vx = (dx - 0.5 * getEffectiveWind() * t * t) / t;
   const vy = (dy - 0.5 * GRAVITY * t * t) / t;
   return { vx: clamp(vx, 140, 1100), vy: clamp(vy, -960, -110) };
 }
@@ -1295,6 +1519,7 @@ function spawnEnemy(forceType = null) {
     bounty,
     burnTimer: 0,
     burnDps: 0,
+    freezeTimer: 0,
     hitFlash: 0,
     bobPhase: Math.random() * Math.PI * 2,
     listAngle: 0,
@@ -1492,7 +1717,8 @@ function damageTower(rawDmg, hitY = L.towerTopY + 70) {
     return;
   }
 
-  const dmg = Math.max(3, Math.round(rawDmg - state.towerArmor * 0.45));
+  const platingMult = Math.max(0.45, 1 - (state.forge.plating || 0) * 0.09);
+  const dmg = Math.max(2, Math.round((rawDmg - state.towerArmor * 0.45) * platingMult));
   state.towerHp = Math.max(0, state.towerHp - dmg);
   state.towerFlash = 0.2;
   state.shake = Math.min(16, state.shake + clamp(dmg * 0.35, 3, 11));
@@ -1626,6 +1852,8 @@ function update(dt) {
   if (state.towerFlash > 0) state.towerFlash = Math.max(0, state.towerFlash - dt);
   if (state.catapultRecoil > 0) state.catapultRecoil = Math.max(0, state.catapultRecoil - dt * 4.5);
   if (state.shieldTimer > 0) state.shieldTimer = Math.max(0, state.shieldTimer - dt);
+  if (state.slowmoTimer > 0) state.slowmoTimer = Math.max(0, state.slowmoTimer - dt);
+  const enemyDt = state.slowmoTimer > 0 ? dt * 0.3 : dt;
 
   const rushMult = state.rushTimer > 0 ? 3.0 : 1.0;
   if (state.rushTimer > 0) state.rushTimer = Math.max(0, state.rushTimer - dt);
@@ -1636,8 +1864,8 @@ function update(dt) {
     if (!ps.unlocked) return;
     if (ps.charges < def.maxCharges) {
       ps.timer += dt;
-      if (ps.timer >= def.reload) {
-        ps.timer -= def.reload;
+      if (ps.timer >= getEffectiveReload(def)) {
+        ps.timer -= getEffectiveReload(def);
         ps.charges += 1;
         if (ps.charges >= def.maxCharges) ps.timer = 0;
       }
@@ -1674,11 +1902,36 @@ function update(dt) {
     p.trail.push({ x: p.x, y: p.y });
     if (p.trail.length > 13) p.trail.shift();
 
-    p.vx += state.windX * dt;
+    p.vx += getEffectiveWind() * dt;
     p.vy += GRAVITY * dt;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.rot += dt * 7.5;
+
+    // Cluster Bomb splits into 5 mini bombs once descending!
+    if (p.type === 'cluster' && !p.splitDone && p.vy > 45) {
+      p.splitDone = true;
+      sound.playThrow('triple');
+      spawnParticles(p.x, p.y, 12, { color: '#ffffff', speed: 160, life: 0.4 });
+      for (let k = -2; k <= 2; k++) {
+        state.playerProjs.push({
+          type: 'bomb',
+          isShard: true,
+          x: p.x, y: p.y,
+          vx: p.vx * (0.85 + k * 0.14),
+          vy: p.vy + Math.abs(k) * 28 - 40,
+          r: 8,
+          damage: Math.round(p.damage * 0.8),
+          aoe: p.aoe,
+          pierceLeft: 1,
+          hitIds: new Set(),
+          burnDps: 0, burnDur: 0, freezeDur: 0, splitDone: true,
+          rot: 0, trail: [], hasHitAnything: true,
+        });
+      }
+      state.playerProjs.splice(i, 1);
+      continue;
+    }
 
     // Mid-air interception
     let intercepted = false;
@@ -1691,7 +1944,7 @@ function update(dt) {
         spawnParticles(ep.x, ep.y, 12, { color: '#ffffff', speed: 150, life: 0.45 });
         addPopup(ep.x, ep.y - 12, '空中攔截！', '#ffffff', 13);
         sound.playHit(false);
-        if (p.type === 'bomb' || p.type === 'fire') {
+        if (p.type === 'bomb' || p.type === 'fire' || p.type === 'frost') {
           detonatePlayerProj(p);
           state.playerProjs.splice(i, 1);
           intercepted = true;
@@ -1715,7 +1968,7 @@ function update(dt) {
         const cy = e.y + c.oy - 14;
         if (Math.hypot(p.x - cx, p.y - cy) < p.r + 17) {
           p.hasHitAnything = true;
-          if (p.type === 'bomb' || p.type === 'fire') {
+          if (p.type === 'bomb' || p.type === 'fire' || p.type === 'frost') {
             detonatePlayerProj(p);
             state.playerProjs.splice(i, 1);
             removed = true;
@@ -1744,7 +1997,7 @@ function update(dt) {
         p.hasHitAnything = true;
         registerComboHit();
 
-        if (p.type === 'bomb' || p.type === 'fire') {
+        if (p.type === 'bomb' || p.type === 'fire' || p.type === 'frost') {
           detonatePlayerProj(p);
           state.playerProjs.splice(i, 1);
           removed = true;
@@ -1770,7 +2023,7 @@ function update(dt) {
 
     const waterY = getWaveY(p.x);
     if (p.y >= waterY) {
-      if (p.type === 'bomb' || p.type === 'fire') {
+      if (p.type === 'bomb' || p.type === 'fire' || p.type === 'frost') {
         p.y = waterY;
         detonatePlayerProj(p);
       } else {
@@ -1964,11 +2217,16 @@ function update(dt) {
     }
 
     if (e.fireRecoil > 0) e.fireRecoil = Math.max(0, e.fireRecoil - dt * 3.5);
+    if (e.freezeTimer > 0) {
+      e.freezeTimer = Math.max(0, e.freezeTimer - dt);
+      e.windup = 0;
+      continue;
+    }
 
     // Move to random 70% middle zone; once stopped, fire every 5.0s with pre-fire gunner animation!
     const moveSpeed = e.speed * (state.rushTimer > 0 ? 1.85 : 1.0);
     if (!e.stopped && e.x > e.stopX) {
-      e.x = Math.max(e.stopX, e.x - moveSpeed * dt);
+      e.x = Math.max(e.stopX, e.x - moveSpeed * enemyDt);
       e.windup = 0;
       if (e.x <= e.stopX) {
         e.stopped = true;
@@ -1976,7 +2234,7 @@ function update(dt) {
       }
     } else {
       e.stopped = true;
-      e.attackTimer -= dt;
+      e.attackTimer -= enemyDt;
       e.windup = e.attackTimer <= 1.2 ? clamp(1 - e.attackTimer / 1.2, 0, 1) : 0;
       if (e.attackTimer <= 0) {
         e.attackTimer = 5.0; // Fire every 5 seconds
@@ -1990,10 +2248,10 @@ function update(dt) {
   // Update Enemy Projectiles
   for (let i = state.enemyProjs.length - 1; i >= 0; i--) {
     const ep = state.enemyProjs[i];
-    ep.vx += state.windX * 0.45 * dt;
-    ep.vy += ep.gravity * dt;
-    ep.x += ep.vx * dt;
-    ep.y += ep.vy * dt;
+    ep.vx += state.windX * 0.45 * enemyDt;
+    ep.vy += ep.gravity * enemyDt;
+    ep.x += ep.vx * enemyDt;
+    ep.y += ep.vy * enemyDt;
 
     if (
       ep.x - ep.r <= L.towerX + L.towerW * 0.52 &&
@@ -2059,6 +2317,48 @@ function updateTowerAddons(dt) {
           state.tracers.push({ x1: ax, y1: ay, x2: airTarget.x, y2: airTarget.y, life: 0.16, color: '#a5f3fc' });
           damageEnemyHull(airTarget, 18 + lv * 9, { hitX: airTarget.x, hitY: airTarget.y });
         }
+      }
+    }
+  }
+
+  // 3. Auto Repairbot
+  if (state.addons.repairbot > 0 && state.towerHp < state.towerMaxHp) {
+    const lv = state.addons.repairbot;
+    state.towerHp = Math.min(state.towerMaxHp, state.towerHp + (2.5 + lv * 2.2) * dt);
+    state.repairTick += dt;
+    if (state.repairTick >= 3.5) {
+      state.repairTick = 0;
+      if (state.towerDents.length > 0) state.towerDents.pop();
+      if (state.towerCracks.length > 0) state.towerCracks.pop();
+      spawnParticles(L.towerX, L.towerTopY + 70, 5, { color: '#ffffff', speed: 60, gravity: -50, size: 2.5, life: 0.5 });
+    }
+  }
+
+  // 4. Coastal Auto Mortar
+  if (state.addons.mortar > 0 && state.enemies.length > 0) {
+    state.mortarTimer -= dt;
+    if (state.mortarTimer <= 0) {
+      const lv = state.addons.mortar;
+      state.mortarTimer = Math.max(1.8, 4.4 - lv * 0.52);
+      const target = state.enemies[Math.floor(Math.random() * state.enemies.length)];
+      if (target) {
+        const mx = L.towerX + L.towerW * 0.42;
+        const my = L.towerTopY + 95;
+        const q = solveQuickBallistic(target.x, target.y - 10);
+        state.playerProjs.push({
+          type: 'bomb',
+          isShard: true,
+          x: mx, y: my,
+          vx: q.vx, vy: q.vy - 40,
+          r: 10,
+          damage: 30 + lv * 14,
+          aoe: 85 + lv * 8,
+          pierceLeft: 1,
+          hitIds: new Set(),
+          burnDps: 0, burnDur: 0, freezeDur: 0, splitDone: true,
+          rot: 0, trail: [], hasHitAnything: true,
+        });
+        sound.playThrow('bomb');
       }
     }
   }
@@ -2133,6 +2433,37 @@ function updateVisualSubsystems(dt) {
     if (s.life <= 0) state.sinking.splice(i, 1);
   }
 
+  // Tidal Waves
+  for (let i = state.waves.length - 1; i >= 0; i--) {
+    const wv = state.waves[i];
+    wv.x += wv.vx * dt;
+    // Clear enemy projectiles in wave path
+    for (let j = state.enemyProjs.length - 1; j >= 0; j--) {
+      if (Math.abs(state.enemyProjs[j].x - wv.x) < wv.width) {
+        state.enemyProjs.splice(j, 1);
+      }
+    }
+    // Knockback & damage surface ships
+    for (let j = state.enemies.length - 1; j >= 0; j--) {
+      const e = state.enemies[j];
+      if (e.cfg.air || wv.hitIds.has(e.id)) continue;
+      if (Math.abs(e.x - wv.x) < wv.width * 0.65 + e.cfg.width * 0.4) {
+        wv.hitIds.add(e.id);
+        e.x = Math.min(L.worldW - 40, e.x + 165);
+        e.stopped = false;
+        e.windup = 0;
+        damageEnemyHull(e, wv.damage, { hitX: e.x, hitY: e.y - 16 });
+      }
+    }
+    if (wv.x > L.worldW + 120) state.waves.splice(i, 1);
+  }
+
+  // Lightning Bolts
+  for (let i = state.lightningBolts.length - 1; i >= 0; i--) {
+    state.lightningBolts[i].life -= dt;
+    if (state.lightningBolts[i].life <= 0) state.lightningBolts.splice(i, 1);
+  }
+
   // Tracers
   for (let i = state.tracers.length - 1; i >= 0; i--) {
     state.tracers[i].life -= dt;
@@ -2168,12 +2499,21 @@ function updateVisualSubsystems(dt) {
 
 function detonatePlayerProj(p) {
   const isFire = p.type === 'fire';
+  const isFrost = p.type === 'frost';
   spawnExplosion(p.x, p.y, p.aoe, isFire);
+  if (isFrost) {
+    spawnParticles(p.x, p.y, 20, { color: '#a5f3fc', speed: 200, gravity: 90, size: 4, life: 0.75 });
+  }
   for (let j = state.enemies.length - 1; j >= 0; j--) {
     const e = state.enemies[j];
     const dist = Math.hypot(e.x - p.x, (e.y - e.cfg.height * 0.4) - p.y);
     if (dist <= p.aoe + e.cfg.width * 0.44) {
       const falloff = 1 - (dist / (p.aoe + e.cfg.width * 0.5)) * 0.35;
+      if (isFrost && p.freezeDur) {
+        e.freezeTimer = Math.max(e.freezeTimer || 0, p.freezeDur);
+        e.windup = 0;
+        addPopup(e.x, e.y - e.cfg.height - 32, '凍結！', '#a5f3fc', 14);
+      }
       damageEnemyHull(e, p.damage * falloff, {
         ignoreArmor: p.type === 'bomb',
         burnDps: p.burnDps,
@@ -2259,6 +2599,7 @@ function render() {
   drawRagdolls();
   drawProjectiles();
   drawTracers();
+  drawTidalWavesAndLightning();
   drawRain();
   drawDebris();
   drawCoinDrops();
@@ -2850,6 +3191,16 @@ function drawEnemies() {
   state.enemies.forEach((e) => {
     const bobY = e.cfg.air ? Math.sin(e.bobPhase) * 6 : 0;
     drawShipVisual(e.x, e.y + bobY, e.cfg, e.type, e.hitFlash > 0, e.listAngle, 1, e.crew, e.cracks, e.windup, e.fireRecoil);
+    if (e.freezeTimer > 0) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(165, 243, 252, 0.85)';
+      ctx.fillStyle = 'rgba(165, 243, 252, 0.16)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(e.x, e.y - e.cfg.height * 0.4, e.cfg.width * 0.56, e.cfg.height * 0.72, 0, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
   });
 }
 
@@ -2942,6 +3293,29 @@ function drawProjectiles() {
     } else if (p.type === 'fire') {
       ctx.fillStyle = '#ffb142'; ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, p.r * 0.5, 0, Math.PI * 2); ctx.fill();
+    } else if (p.type === 'chain') {
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.stroke();
+      ctx.fillStyle = '#0b0d10';
+      ctx.beginPath(); ctx.arc(-16, 0, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(16, 0, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    } else if (p.type === 'cluster') {
+      ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      for (let a = 0; a < Math.PI * 2; a += Math.PI * 0.4) {
+        ctx.beginPath(); ctx.arc(Math.cos(a) * 6, Math.sin(a) * 6, 2, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (p.type === 'frost') {
+      ctx.fillStyle = '#a5f3fc'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let a = 0; a < 6; a++) {
+        const ang = (a / 6) * Math.PI * 2;
+        const rx = Math.cos(ang) * p.r;
+        const ry = Math.sin(ang) * p.r;
+        if (a === 0) ctx.moveTo(rx, ry); else ctx.lineTo(rx, ry);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
     }
     ctx.restore();
   });
@@ -2959,6 +3333,53 @@ function drawProjectiles() {
     }
     ctx.restore();
   });
+}
+
+function drawTidalWavesAndLightning() {
+  // Tidal Wave Walls
+  state.waves.forEach((wv) => {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(wv.x - wv.width, L.seaY + 20);
+    ctx.quadraticCurveTo(wv.x - 10, L.seaY - wv.height, wv.x + 22, L.seaY - wv.height * 0.85);
+    ctx.quadraticCurveTo(wv.x - 4, L.seaY - wv.height * 0.45, wv.x + 24, L.seaY + 20);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  });
+
+  // Jagged Lightning Bolts
+  state.lightningBolts.forEach((lb) => {
+    const a = clamp(lb.life / lb.maxLife, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = '#a5f3fc';
+    ctx.lineWidth = 4.5 * a;
+    ctx.beginPath();
+    let cx = lb.x;
+    ctx.moveTo(cx, 0);
+    for (let y = 50; y <= L.seaY; y += 55) {
+      cx = lb.x + (Math.random() - 0.5) * 34;
+      ctx.lineTo(cx, y);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2 * a;
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // Subtle slowmo vignette
+  if (state.slowmoTimer > 0) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(165, 243, 252, 0.38)';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, L.worldW - 8, L.worldH - 8);
+    ctx.restore();
+  }
 }
 
 function drawTracers() {
@@ -3066,7 +3487,7 @@ function drawAimTrajectory() {
   // Wind-accurate parabolic trajectory preview!
   for (let step = 1; step <= 26; step++) {
     const t = step * 0.055;
-    const px = sx + state.aimVx * t + 0.5 * state.windX * t * t;
+    const px = sx + state.aimVx * t + 0.5 * getEffectiveWind() * t * t;
     const py = sy + state.aimVy * t + 0.5 * GRAVITY * t * t;
     if (py > L.seaY + 8 || px > L.worldW + 20) break;
     ctx.fillStyle = `rgba(255,255,255,${Math.max(0.12, 1 - step / 28)})`;
@@ -3182,7 +3603,7 @@ window.addEventListener('keydown', (e) => {
   else if (k === 'l') state.lbOpen ? closeLeaderboard() : openLeaderboard();
   else if (k === 'p') { if (!state.shopOpen && !state.lbOpen) togglePause(); }
   else if (k === 'm') toggleSound();
-  else if (['1', '2', '3', '4', '5'].includes(k)) {
+  else if (['1', '2', '3', '4', '5', '6', '7', '8'].includes(k)) {
     const def = PROJECTILE_DEFS[Number(k) - 1];
     if (def && state.projectiles[def.id].unlocked) { state.selectedProj = def.id; updateDockDisplays(); }
   }
