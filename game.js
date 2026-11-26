@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.6';
-import { sound } from './audio.js?v=2.6';
+import { ICONS } from './icons.js?v=2.7';
+import { sound } from './audio.js?v=2.7';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -360,6 +360,24 @@ const ENEMY_TYPES = {
     crewSlots: [{ ox: 0, oy: 12, gunner: true }],
     turrets: [{ ox: -24, oy: 16, scale: 0.95 }, { ox: 18, oy: 16, scale: 0.85 }],
   },
+  fireship: {
+    name: '烈焰火藥舟', minLv: 2, hp: 28, armor: 0, speed: 78, damage: 24, attackCd: 5.0,
+    width: 82, height: 24, bounty: 28, ranged: true, projType: 'cannonball', air: false, explosive: true,
+    crewSlots: [{ ox: 18, oy: -22, gunner: true }],
+    turrets: [{ ox: -16, oy: -22, scale: 0.85 }],
+  },
+  sub: {
+    name: '幽靈潛艇', minLv: 3, hp: 92, armor: 5, speed: 58, damage: 20, attackCd: 5.0,
+    width: 112, height: 26, bounty: 54, ranged: true, projType: 'cannonball', air: false, stealthSub: true,
+    crewSlots: [{ ox: 4, oy: -42, gunner: true }],
+    turrets: [{ ox: -22, oy: -28, scale: 0.95 }, { ox: 26, oy: -28, scale: 0.85 }],
+  },
+  catamaran: {
+    name: '雙體巨砲艦', minLv: 4, hp: 165, armor: 7, speed: 36, damage: 24, attackCd: 5.0,
+    width: 136, height: 42, bounty: 78, ranged: true, projType: 'cannonball', air: false,
+    crewSlots: [{ ox: -36, oy: -42, gunner: true }, { ox: 0, oy: -54, gunner: true }, { ox: 36, oy: -42, gunner: false }],
+    turrets: [{ ox: -44, oy: -42, scale: 1.05 }, { ox: -8, oy: -54, scale: 1.05 }, { ox: 24, oy: -42, scale: 0.95 }],
+  },
   dreadnought: {
     name: '無畏黑帆旗艦', minLv: 5, hp: 330, armor: 12, speed: 28, damage: 32, attackCd: 5.0,
     width: 176, height: 50, bounty: 160, ranged: true, projType: 'cannonball', air: false,
@@ -402,6 +420,16 @@ function getShipDeckY(type, cfg, ox) {
     if (ox < -18) return -h - 6;
     if (ox > 18) return -h - 10;
     return -h + 2;
+  }
+  if (type === 'fireship') {
+    const t = clamp(ox / (w * 0.5), -1, 1);
+    return -h + 4 - (t * t) * 8;
+  }
+  if (type === 'sub') {
+    return Math.abs(ox) < 18 ? -h - 16 : -h - 2; // Raised conning tower in center
+  }
+  if (type === 'catamaran') {
+    return Math.abs(ox) < 22 ? -h - 12 : -h; // Elevated central bridge
   }
   if (type === 'dreadnought') {
     if (ox < -36) return -h - 12; // High forecastle
@@ -608,6 +636,15 @@ function createInitialState() {
     targetWindX: 0,
     lightningFlash: 0,
     rainDrops: Array.from({ length: 70 }, () => ({ x: Math.random() * 1400, y: Math.random() * 1000, len: 14 + Math.random() * 14 })),
+    stars: Array.from({ length: 48 }, () => ({
+      x: Math.random(), y: Math.random() * 0.52, r: 0.7 + Math.random() * 1.4, phase: Math.random() * Math.PI * 2,
+    })),
+    birds: Array.from({ length: 4 }, (_, i) => ({
+      x: 200 + i * 280, y: 85 + i * 32, vx: -18 - i * 4, phase: i * 1.4,
+    })),
+    crates: [],
+    crateTimer: 16,
+    overdriveTimer: 0,
     // Entities
     enemies: [],
     sinking: [],
@@ -1006,7 +1043,8 @@ function getProjectileDamage(def, level) {
 }
 function getEffectiveReload(def) {
   const forgeReload = Math.max(0.55, 1 - ((state && state.forge ? state.forge.reload : 0) * 0.08));
-  return def.reload * forgeReload;
+  const overdrive = (state && state.overdriveTimer > 0) ? 0.5 : 1.0;
+  return def.reload * forgeReload * overdrive;
 }
 function getEffectiveWind() {
   const stab = (state && state.addons ? state.addons.stabilizer : 0);
@@ -1634,7 +1672,16 @@ function sinkEnemyShip(enemy, splitSnap = false) {
 
   spawnCoinBurst(enemy.x, enemy.y - enemy.cfg.height - 16, enemy.bounty);
 
-  if (splitSnap && !enemy.cfg.air) {
+  if (enemy.cfg.explosive) {
+    spawnExplosion(enemy.x, enemy.y - 12, 155, true);
+    addPopup(enemy.x, enemy.y - 52, '火藥艙連鎖大爆炸！', '#ffb142', 16);
+    for (let j = state.enemies.length - 1; j >= 0; j--) {
+      const other = state.enemies[j];
+      if (Math.hypot(other.x - enemy.x, other.y - enemy.y) < 155 + other.cfg.width * 0.4) {
+        damageEnemyHull(other, 65 + state.intensity * 10, { ignoreArmor: true, burnDps: 14, burnDur: 3.5, breachForce: true });
+      }
+    }
+  } else if (splitSnap && !enemy.cfg.air) {
     addPopup(enemy.x, enemy.y - enemy.cfg.height - 42, '船體砸穿沉沒！', '#ffffff', 15);
     spawnDebris(enemy.x, enemy.y - 12, 12, '#e2e8f0', 0);
   }
@@ -1894,6 +1941,39 @@ function update(dt) {
   if (state.catapultRecoil > 0) state.catapultRecoil = Math.max(0, state.catapultRecoil - dt * 4.5);
   if (state.shieldTimer > 0) state.shieldTimer = Math.max(0, state.shieldTimer - dt);
   if (state.slowmoTimer > 0) state.slowmoTimer = Math.max(0, state.slowmoTimer - dt);
+  if (state.overdriveTimer > 0) state.overdriveTimer = Math.max(0, state.overdriveTimer - dt);
+
+  // Floating Sea Supply Crates
+  state.crateTimer -= dt;
+  if (state.crateTimer <= 0 && state.crates.length < 2) {
+    state.crateTimer = 22 + Math.random() * 14;
+    const kinds = ['gold', 'repair', 'overdrive'];
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    const towerEdge = L.towerX + L.towerW * 0.5;
+    const span = Math.max(180, L.worldW - towerEdge);
+    state.crates.push({
+      x: towerEdge + span * (0.25 + Math.random() * 0.58),
+      y: -30,
+      kind,
+      floating: false,
+      phase: Math.random() * Math.PI * 2,
+      life: 16,
+    });
+  }
+  for (let i = state.crates.length - 1; i >= 0; i--) {
+    const cr = state.crates[i];
+    cr.phase += dt * 3;
+    const wy = getWaveY(cr.x);
+    if (!cr.floating) {
+      cr.y += 95 * dt;
+      cr.x += state.windX * 0.18 * dt;
+      if (cr.y >= wy - 6) { cr.y = wy - 6; cr.floating = true; spawnWaterSplash(cr.x, 0.5); }
+    } else {
+      cr.y = wy - 6 + Math.sin(cr.phase) * 3;
+      cr.life -= dt;
+      if (cr.life <= 0) state.crates.splice(i, 1);
+    }
+  }
   const enemyDt = state.slowmoTimer > 0 ? dt * 0.3 : dt;
 
   const rushMult = state.rushTimer > 0 ? 3.0 : 1.0;
@@ -1994,6 +2074,31 @@ function update(dt) {
       }
     }
     if (intercepted) continue;
+
+    // Hit floating supply crates!
+    for (let cIdx = state.crates.length - 1; cIdx >= 0; cIdx--) {
+      const cr = state.crates[cIdx];
+      if (Math.hypot(p.x - cr.x, p.y - cr.y) < p.r + 22) {
+        state.crates.splice(cIdx, 1);
+        p.hasHitAnything = true;
+        registerComboHit();
+        sound.playBuy();
+        spawnParticles(cr.x, cr.y, 18, { color: '#ffeaa7', speed: 190, life: 0.65 });
+        if (cr.kind === 'gold') {
+          spawnCoinBurst(cr.x, cr.y - 10, 55 + state.intensity * 12);
+          addPopup(cr.x, cr.y - 36, '海上寶箱！', '#ffeaa7', 16);
+        } else if (cr.kind === 'repair') {
+          state.towerHp = Math.min(state.towerMaxHp, state.towerHp + Math.round(state.towerMaxHp * 0.25));
+          state.towerDents.splice(0, 4);
+          state.towerCracks.splice(0, 4);
+          addPopup(cr.x, cr.y - 36, '補給：高塔修復！', '#ffffff', 16);
+        } else {
+          state.overdriveTimer = 6.5;
+          addPopup(cr.x, cr.y - 36, '補給：裝填速度 ×2！', '#a5f3fc', 16);
+        }
+        break;
+      }
+    }
 
     // Hit enemies (first check high-elevation individual crew hitboxes like crow's nest, then ship hull)
     let removed = false;
@@ -2268,6 +2373,11 @@ function update(dt) {
     const moveSpeed = e.speed * (state.rushTimer > 0 ? 1.85 : 1.0);
     if (!e.stopped && e.x > e.stopX) {
       e.x = Math.max(e.stopX, e.x - moveSpeed * enemyDt);
+      if (!e.cfg.air && Math.random() < dt * 8) {
+        spawnParticles(e.x - e.cfg.width * 0.44, getWaveY(e.x) + 2, 1, {
+          color: 'rgba(255,255,255,0.55)', speed: 55, gravity: 200, size: 2.2, life: 0.35, spread: 1.0, angle: -0.9,
+        });
+      }
       e.windup = 0;
       if (e.x <= e.stopX) {
         e.stopped = true;
@@ -2526,6 +2636,13 @@ function updateVisualSubsystems(dt) {
     if (pp.life <= 0) state.popups.splice(i, 1);
   }
 
+  // Coastal Seabirds
+  state.birds.forEach((b) => {
+    b.phase += dt * 5;
+    b.x += (b.vx + state.windX * 0.15) * dt;
+    if (b.x < -80) { b.x = L.worldW + 80; b.y = 70 + Math.random() * 140; }
+  });
+
   // Weather Rain Drops
   const rainRate = WEATHER_STATES[state.weatherIdx].rain;
   if (rainRate > 0) {
@@ -2634,6 +2751,7 @@ function render() {
   drawShieldDome();
   drawSeaBack();
   drawMines();
+  drawSupplyCrates();
   drawSinkingShips();
   drawEnemies();
   drawRollingStones();
@@ -2657,16 +2775,38 @@ function render() {
 function drawBackgroundDecor() {
   const t = state.elapsed;
   ctx.save();
+
+  // Twinkling Starfield
+  state.stars.forEach((st) => {
+    const a = 0.18 + 0.55 * (0.5 + 0.5 * Math.sin(t * 2.2 + st.phase));
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.beginPath();
+    ctx.arc(st.x * L.worldW, st.y * L.seaY, st.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
   const moonX = L.worldW * 0.77;
   const moonY = L.isPortrait ? 180 : 142;
-  const glow = ctx.createRadialGradient(moonX, moonY, 10, moonX, moonY, 140);
-  glow.addColorStop(0, 'rgba(255,255,255,0.2)');
+  const glow = ctx.createRadialGradient(moonX, moonY, 10, moonX, moonY, 165);
+  glow.addColorStop(0, 'rgba(255,255,255,0.24)');
   glow.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(moonX, moonY, 140, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(moonX, moonY, 165, 0, Math.PI * 2); ctx.fill();
 
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
   ctx.beginPath(); ctx.arc(moonX, moonY, 24, 0, Math.PI * 2); ctx.fill();
+
+  // Gliding Coastal Seabirds
+  ctx.strokeStyle = 'rgba(255,255,255,0.34)';
+  ctx.lineWidth = 1.4;
+  state.birds.forEach((b) => {
+    const flap = Math.sin(b.phase) * 4;
+    ctx.beginPath();
+    ctx.moveTo(b.x - 8, b.y - flap);
+    ctx.quadraticCurveTo(b.x - 3, b.y - 4, b.x, b.y);
+    ctx.quadraticCurveTo(b.x + 3, b.y - 4, b.x + 8, b.y - flap);
+    ctx.stroke();
+  });
 
   // Distant sleek mountains
   ctx.fillStyle = 'rgba(255,255,255,0.035)';
@@ -2830,6 +2970,34 @@ function drawCliffAndTower() {
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(L.towerX, topY + 26, 22 + Math.sin(state.elapsed * 4) * 3, 0, Math.PI * 2); ctx.stroke();
   }
+  if (state.addons.mortar > 0) {
+    const mx = x + w - 4, my = topY + 95;
+    ctx.save(); ctx.translate(mx, my); ctx.rotate(-0.65);
+    ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+    ctx.fillRect(0, -5, 22, 10); ctx.strokeRect(0, -5, 22, 10);
+    ctx.restore();
+  }
+  if (state.addons.stabilizer > 0) {
+    const vx = x + 6, vy = topY - 4;
+    ctx.strokeStyle = '#a5f3fc'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(vx, vy - 24); ctx.stroke();
+    ctx.beginPath(); ctx.arc(vx, vy - 24, 5, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // Diegetic Wind Banner Flag fluttering on tower left edge!
+  const fx = x - 4, fy = topY - 4;
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy - 34); ctx.stroke();
+  const fDir = state.windX < -15 ? -1 : state.windX > 15 ? 1 : 1;
+  const fLen = 14 + Math.min(18, Math.abs(state.windX) * 0.14);
+  const fWave = Math.sin(state.elapsed * (6 + Math.abs(state.windX) * 0.06)) * 3.5;
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.beginPath();
+  ctx.moveTo(fx, fy - 34);
+  ctx.quadraticCurveTo(fx + fDir * fLen * 0.5, fy - 34 + fWave, fx + fDir * fLen, fy - 28 + fWave * 0.6);
+  ctx.lineTo(fx, fy - 22);
+  ctx.closePath();
+  ctx.fill();
 
   ctx.restore();
 }
@@ -2931,7 +3099,35 @@ function drawSeaFront() {
     if (x === -160) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
+
+  // Shimmering Moonlight Reflection Path on Water
+  const moonX = L.worldW * 0.77;
+  for (let i = 0; i < 6; i++) {
+    const ry = L.seaY + 18 + i * 16;
+    const rw = Math.max(12, 58 - i * 7) + Math.sin(state.elapsed * 3.2 + i * 1.3) * 8;
+    const rx = moonX + Math.sin(state.elapsed * 2 + i) * 6;
+    ctx.fillStyle = `rgba(255,255,255,${0.18 - i * 0.025})`;
+    ctx.fillRect(rx - rw * 0.5, ry, rw, 2.2);
+  }
   ctx.restore();
+}
+
+function drawSupplyCrates() {
+  state.crates.forEach((cr) => {
+    ctx.save();
+    ctx.translate(cr.x, cr.y);
+    // Parachute canopy while descending
+    if (!cr.floating) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(0, -24, 16, Math.PI, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-14, -24); ctx.lineTo(-6, -8); ctx.moveTo(14, -24); ctx.lineTo(6, -8); ctx.stroke();
+    }
+    const accent = cr.kind === 'gold' ? '#ffeaa7' : cr.kind === 'overdrive' ? '#a5f3fc' : '#ffffff';
+    ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = accent; ctx.lineWidth = 2;
+    ctx.fillRect(-11, -11, 22, 22); ctx.strokeRect(-11, -11, 22, 22);
+    ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(11, 0); ctx.moveTo(0, -11); ctx.lineTo(0, 11); ctx.stroke();
+    ctx.restore();
+  });
 }
 
 function drawMines() {
@@ -3171,6 +3367,37 @@ function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks =
     ctx.moveTo(-10, -h + 2); ctx.lineTo(0, -h - 22); ctx.lineTo(10, -h + 2);
     ctx.moveTo(0, -h + 2); ctx.lineTo(-16, -h - 14);
     ctx.stroke();
+  } else if (type === 'fireship') {
+    // Low-slung Burning Powder Skiff packed with explosive barrels
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.52, -h - 6);
+    ctx.quadraticCurveTo(0, -h + 8, w * 0.52, -h - 6);
+    ctx.lineTo(w * 0.34, 4); ctx.lineTo(-w * 0.36, 4);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // Powder kegs & flames on bow
+    ctx.fillStyle = '#ffb142';
+    ctx.beginPath(); ctx.arc(-10, -h - 2, 5, 0, Math.PI * 2); ctx.arc(2, -h - 2, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,177,66,0.55)';
+    ctx.beginPath(); ctx.arc(-26, -h - 6, 7 + Math.sin(state.elapsed * 16) * 2, 0, Math.PI * 2); ctx.fill();
+  } else if (type === 'sub') {
+    // Sleek Monochrome Submarine with Conning Tower & Periscope
+    ctx.beginPath();
+    ctx.ellipse(0, -h * 0.45, w * 0.5, h * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // Conning tower
+    ctx.fillRect(-16, -h - 14, 32, 16); ctx.strokeRect(-16, -h - 14, 32, 16);
+    // Periscope
+    ctx.beginPath(); ctx.moveTo(-4, -h - 14); ctx.lineTo(-4, -h - 26); ctx.lineTo(-12, -h - 26); ctx.stroke();
+  } else if (type === 'catamaran') {
+    // Twin-Hull Catamaran Siege Platform with Elevated Central Bridge
+    ctx.beginPath();
+    ctx.rect(-w * 0.5, -h, 36, h + 4);
+    ctx.rect(w * 0.5 - 36, -h, 36, h + 4);
+    ctx.fill(); ctx.stroke();
+    // Overhead Bridge Span
+    ctx.fillRect(-w * 0.36, -h - 12, w * 0.72, 14);
+    ctx.strokeRect(-w * 0.36, -h - 12, w * 0.72, 14);
   } else if (type === 'dreadnought') {
     // Massive 3-Tier Pirate Galleon with Bowsprit, Forecastle, Waist, Towering Stern Castle & Twin Masts
     ctx.beginPath();
