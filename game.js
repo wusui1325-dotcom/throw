@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js';
-import { sound } from './audio.js';
+import { ICONS } from './icons.js?v=2.1';
+import { sound } from './audio.js?v=2.1';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
