@@ -95,6 +95,7 @@ html, body, #app {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 6px 20px rgba(0, 0, 0, 0.28);
   color: var(--fg);
   font-size: 12.5px;
   font-weight: 600;
@@ -192,6 +193,7 @@ button.icon-pill:active {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 6px 20px rgba(0, 0, 0, 0.28);
   color: var(--fg);
   cursor: pointer;
   overflow: hidden;
@@ -784,4 +786,12 @@ button.icon-pill:active {
     bottom: 78px;
     font-size: 11px;
   }
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-panel {
+  animation: modalPop 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
