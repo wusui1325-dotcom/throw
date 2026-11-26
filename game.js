@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.1';
-import { sound } from './audio.js?v=2.1';
+import { ICONS } from './icons.js?v=2.2';
+import { sound } from './audio.js?v=2.2';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -190,33 +190,73 @@ const WEATHER_STATES = [
 const ENEMY_TYPES = {
   skiff: {
     name: '海盜輕舟', minLv: 1, hp: 34, armor: 0, speed: 68, damage: 9, attackCd: 1.5,
-    stopFrac: 0.21, width: 74, height: 26, bounty: 14, ranged: false, air: false, crewOffsets: [0],
+    stopFrac: 0.21, width: 78, height: 24, bounty: 14, ranged: false, air: false,
+    crewSlots: [{ ox: 0, oy: -20 }],
   },
   archer: {
     name: '弓手帆船', minLv: 1, hp: 48, armor: 0, speed: 52, damage: 7, attackCd: 2.3,
-    stopFrac: 0.46, width: 86, height: 30, bounty: 22, ranged: true, projType: 'arrow', air: false, crewOffsets: [-12, 10],
+    stopFrac: 0.46, width: 94, height: 30, bounty: 22, ranged: true, projType: 'arrow', air: false,
+    crewSlots: [{ ox: 26, oy: -42 }, { ox: -4, oy: -78 }],
   },
   cannon: {
     name: '加農砲艦', minLv: 2, hp: 86, armor: 3, speed: 42, damage: 17, attackCd: 3.0,
-    stopFrac: 0.56, width: 106, height: 36, bounty: 36, ranged: true, projType: 'cannonball', air: false, crewOffsets: [-16, 14],
+    stopFrac: 0.56, width: 112, height: 34, bounty: 36, ranged: true, projType: 'cannonball', air: false,
+    crewSlots: [{ ox: -18, oy: -32 }, { ox: 32, oy: -46 }],
   },
   rammer: {
     name: '裝甲衝撞艦', minLv: 3, hp: 140, armor: 8, speed: 58, damage: 25, attackCd: 1.9,
-    stopFrac: 0.22, width: 112, height: 38, bounty: 48, ranged: false, air: false, crewOffsets: [-10, 14],
+    stopFrac: 0.22, width: 116, height: 38, bounty: 48, ranged: false, air: false,
+    crewSlots: [{ ox: -22, oy: -40 }, { ox: 24, oy: -38 }],
   },
   catapult: {
     name: '海盜投石艦', minLv: 3, hp: 110, armor: 4, speed: 36, damage: 22, attackCd: 3.5,
-    stopFrac: 0.66, width: 114, height: 38, bounty: 54, ranged: true, projType: 'boulder', air: false, crewOffsets: [-18, 18],
+    stopFrac: 0.66, width: 120, height: 36, bounty: 54, ranged: true, projType: 'boulder', air: false,
+    crewSlots: [{ ox: -34, oy: -42 }, { ox: 34, oy: -46 }],
   },
   zeppelin: {
     name: '海盜飛艇', minLv: 4, hp: 96, armor: 2, speed: 48, damage: 19, attackCd: 2.8,
-    stopFrac: 0.36, width: 116, height: 48, bounty: 60, ranged: true, projType: 'airbomb', air: true, flyFrac: 0.26, crewOffsets: [0],
+    stopFrac: 0.36, width: 118, height: 48, bounty: 60, ranged: true, projType: 'airbomb', air: true, flyFrac: 0.26,
+    crewSlots: [{ ox: 0, oy: 12 }],
   },
   dreadnought: {
     name: '無畏黑帆旗艦', minLv: 5, hp: 320, armor: 12, speed: 26, damage: 34, attackCd: 2.8,
-    stopFrac: 0.52, width: 162, height: 52, bounty: 150, ranged: true, projType: 'cannonball', air: false, crewOffsets: [-38, 0, 38], boss: true,
+    stopFrac: 0.52, width: 174, height: 50, bounty: 150, ranged: true, projType: 'cannonball', air: false,
+    crewSlots: [{ ox: -54, oy: -62 }, { ox: -6, oy: -46 }, { ox: 54, oy: -70 }, { ox: 12, oy: -118 }], boss: true,
   },
 };
+
+// Returns deck Y offset (relative to ship.y) at horizontal offset ox
+function getShipDeckY(type, cfg, ox) {
+  const w = cfg.width;
+  const h = cfg.height;
+  if (type === 'skiff') {
+    const t = clamp(ox / (w * 0.5), -1, 1);
+    return -h + 4 - (t * t) * 10; // Crescent U-shaped deck
+  }
+  if (type === 'archer') {
+    return ox > 10 ? -h - 12 : -h + 2; // Raised stern castle
+  }
+  if (type === 'cannon') {
+    if (ox < -28) return -h - 6; // Raised bow gunwale
+    if (ox > 18) return -h - 12; // Raised quarterdeck
+    return -h + 2;
+  }
+  if (type === 'rammer') {
+    const t = clamp(ox / (w * 0.45), -1, 1);
+    return -h - 10 + (t * t) * 14; // Domed turtleback armor
+  }
+  if (type === 'catapult') {
+    if (ox < -18) return -h - 6;
+    if (ox > 18) return -h - 10;
+    return -h + 2;
+  }
+  if (type === 'dreadnought') {
+    if (ox < -36) return -h - 12; // High forecastle
+    if (ox > 32) return -h - 20;  // Towering stern castle
+    return -h + 4;                // Deep waist deck
+  }
+  return -h + 4;
+}
 
 // ============================================================
 // DOM & RESPONSIVE LAYOUT (DESKTOP + MOBILE PORTRAIT)
@@ -1224,7 +1264,7 @@ function spawnEnemy(forceType = null) {
     bobPhase: Math.random() * Math.PI * 2,
     listAngle: 0,
     cracks: [],
-    crew: cfg.crewOffsets.map((ox) => ({ ox, alive: true })),
+    crew: cfg.crewSlots.map((s) => ({ ox: s.ox, oy: s.oy, alive: true })),
     unmannedTimer: 0,
   });
 
@@ -1236,7 +1276,7 @@ function killCrewMember(enemy, crewObj, kickVx, kickVy, reason = '擊倒海盜')
   crewObj.alive = false;
   registerComboHit();
   const cx = enemy.x + crewObj.ox;
-  const cy = enemy.y - enemy.cfg.height - 10;
+  const cy = enemy.y + crewObj.oy - 10;
   spawnRagdoll(cx, cy, kickVx, kickVy);
   spawnParticles(cx, cy, 8, { color: '#ffffff', speed: 140, life: 0.45 });
   const crewCoin = Math.max(4, Math.round(enemy.bounty * 0.28));
@@ -1331,7 +1371,7 @@ function handleStoneShipImpact(p, enemy) {
   for (const c of enemy.crew) {
     if (!c.alive) continue;
     const cx = enemy.x + c.ox;
-    const cy = enemy.y - enemy.cfg.height - 14;
+    const cy = enemy.y + c.oy - 12;
     if (Math.hypot(p.x - cx, p.y - cy) < p.r + 18) {
       killCrewMember(enemy, c, p.vx * 0.38, -210, '精準砸飛！');
     }
@@ -1690,20 +1730,39 @@ function update(dt) {
       continue;
     }
 
-    // Roll along ship's tilted deck!
-    rs.vx += Math.sin(ship.listAngle) * 340 * dt;
-    rs.ox += rs.vx * dt;
+    // Roll along ship's contoured deck (curved / stepped / domed)!
+    const yPrev = getShipDeckY(ship.type, ship.cfg, rs.ox);
+    const nextOx = rs.ox + rs.vx * dt;
+    const yNext = getShipDeckY(ship.type, ship.cfg, nextOx);
+    const stepUp = yPrev - yNext; // positive means climbing up a step/wall
+
+    if (stepUp > 7) {
+      // Hit a vertical bulkhead / raised castle wall -> bounce back & lose speed!
+      rs.vx = -rs.vx * 0.45;
+      rs.life -= 0.45;
+      spawnParticles(ship.x + rs.ox, ship.y + yPrev, 4, { color: '#ffffff', speed: 80, life: 0.28 });
+    } else {
+      const slope = (yNext - yPrev) / Math.max(1, Math.abs(nextOx - rs.ox));
+      rs.vx += (Math.sin(ship.listAngle) * 340 + slope * 260) * dt;
+      rs.vx *= Math.pow(0.88, dt); // deck friction
+      rs.ox = nextOx;
+    }
     rs.rot += (rs.vx / Math.max(6, rs.r)) * dt;
 
-    // Crush any pirate stickman in its path!
+    const stoneDeckY = getShipDeckY(ship.type, ship.cfg, rs.ox);
+    // Crush ONLY pirate stickmen standing near the stone's deck level (crow's nest & high castles are safe!)
     ship.crew.forEach((c) => {
-      if (c.alive && Math.abs(rs.ox - c.ox) < rs.r + 13) {
+      if (c.alive && Math.abs(rs.ox - c.ox) < rs.r + 13 && Math.abs(stoneDeckY - c.oy) < 16) {
         killCrewMember(ship, c, rs.vx * 0.9, -195, '滾石壓扁！');
-        damageEnemyHull(ship, rs.damage * 0.4, { hitX: ship.x + rs.ox, hitY: ship.y - ship.cfg.height });
+        damageEnemyHull(ship, rs.damage * 0.4, { hitX: ship.x + rs.ox, hitY: ship.y + stoneDeckY });
       }
     });
 
-    // Roll off bow or stern into the sea!
+    // Roll off bow or stern into the sea, or stop if momentum exhausted
+    if (Math.abs(rs.vx) < 14 && rs.life < 1.5) {
+      state.rollingStones.splice(i, 1);
+      continue;
+    }
     if (Math.abs(rs.ox) > ship.cfg.width * 0.52) {
       state.playerProjs.push({
         type: 'stone',
@@ -2451,58 +2510,187 @@ function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks =
 
   const w = cfg.width;
   const h = cfg.height;
+  const hullFill = flash ? '#ffffff' : (cfg.boss ? '#10141c' : '#181e28');
 
   if (cfg.air) {
-    ctx.fillStyle = flash ? '#ffffff' : '#161b24';
+    // Rigid Zeppelin Airship with dorsal tail fins & propeller
+    ctx.fillStyle = hullFill;
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.ellipse(0, -14, w * 0.5, h * 0.45, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#0b0d10';
-    ctx.fillRect(-18, 12, 36, 12); ctx.strokeRect(-18, 12, 36, 12);
-  } else {
-    // Draw surviving pirate crew
-    crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, -h + 4); });
-
-    // Mast & Wind-billowing Sail
-    if (type !== 'rammer') {
-      ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 2;
-      const mastH = cfg.boss ? 74 : 46;
-      ctx.beginPath(); ctx.moveTo(12, -h + 2); ctx.lineTo(12, -h - mastH); ctx.stroke();
-      const billow = -16 + state.windX * 0.12;
-      ctx.fillStyle = cfg.boss ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.1)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-      ctx.beginPath();
-      ctx.moveTo(12, -h - mastH + 4);
-      ctx.quadraticCurveTo(billow, -h - mastH * 0.55, 12, -h - 10);
-      ctx.closePath();
-      ctx.fill(); ctx.stroke();
-    }
-
-    // Hull
-    ctx.fillStyle = flash ? '#ffffff' : (cfg.boss ? '#10141c' : '#181e28');
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = cfg.boss ? 2.5 : 2;
+    // Tail fins
     ctx.beginPath();
-    ctx.moveTo(-w * 0.5, -h + 4); ctx.lineTo(w * 0.5, -h + 4);
-    ctx.lineTo(w * 0.36, 4); ctx.lineTo(-w * 0.38, 4);
+    ctx.moveTo(w * 0.36, -24); ctx.lineTo(w * 0.54, -40); ctx.lineTo(w * 0.5, -18);
+    ctx.moveTo(w * 0.36, -4); ctx.lineTo(w * 0.54, 8); ctx.lineTo(w * 0.5, -10);
+    ctx.stroke();
+    // Balloon envelope
+    ctx.beginPath(); ctx.ellipse(0, -14, w * 0.5, h * 0.45, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.beginPath(); ctx.moveTo(-w * 0.46, -14); ctx.lineTo(w * 0.46, -14); ctx.stroke();
+    // Gondola + Pilot
+    crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, c.oy); });
+    ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#0b0d10';
+    ctx.fillRect(-20, 10, 40, 13); ctx.strokeRect(-20, 10, 40, 13);
+    ctx.beginPath(); ctx.moveTo(-14, 4); ctx.lineTo(-14, 10); ctx.moveTo(14, 4); ctx.lineTo(14, 10); ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  // Draw surviving pirate crew at their varied elevation slots
+  crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, c.oy); });
+
+  const billow = -18 + state.windX * 0.12;
+  ctx.fillStyle = hullFill;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = cfg.boss ? 2.5 : 2;
+
+  if (type === 'skiff') {
+    // Crescent upturned Viking/Pirate Skiff
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.54, -h - 8);
+    ctx.quadraticCurveTo(0, -h + 10, w * 0.54, -h - 8);
+    ctx.lineTo(w * 0.34, 4);
+    ctx.quadraticCurveTo(0, 8, -w * 0.34, 4);
     ctx.closePath();
     ctx.fill(); ctx.stroke();
 
-    // Dynamic Hull Cracks (visual damage instead of HP bars!)
-    if (cracks.length) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.3;
-      cracks.forEach((cr) => {
-        ctx.beginPath();
-        ctx.moveTo(cr.ox, cr.oy);
-        ctx.lineTo(cr.ox + Math.cos(cr.ang) * cr.len, cr.oy + Math.sin(cr.ang) * cr.len);
-        ctx.stroke();
-      });
-    }
+    // Small lateen jib sail
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(14, -h); ctx.lineTo(14, -h - 36); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath(); ctx.moveTo(14, -h - 34); ctx.quadraticCurveTo(billow + 12, -h - 18, 14, -h - 6); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  } else if (type === 'archer') {
+    // Stepped Caravel with Raised Stern Castle & Mast Crow's Nest
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.52, -h - 4);
+    ctx.lineTo(-w * 0.36, -h + 2);
+    ctx.lineTo(10, -h + 2);
+    ctx.lineTo(12, -h - 12);
+    ctx.lineTo(w * 0.5, -h - 14);
+    ctx.lineTo(w * 0.36, 4);
+    ctx.lineTo(-w * 0.36, 4);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
 
-    if (type === 'rammer') {
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.moveTo(-w * 0.5, -h + 10); ctx.lineTo(-w * 0.66, -h * 0.45); ctx.lineTo(-w * 0.44, -2); ctx.closePath(); ctx.fill();
-    } else if (type === 'cannon' || cfg.boss) {
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(-w * 0.5 - 8, -h + 10, 12, 5);
-    }
+    // Tall mast + Crow's Nest platform
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-4, -h + 2); ctx.lineTo(-4, -h - 64); ctx.stroke();
+    ctx.fillStyle = '#0b0d10';
+    ctx.fillRect(-14, -h - 48, 20, 7); ctx.strokeRect(-14, -h - 48, 20, 7);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.moveTo(-4, -h - 62); ctx.quadraticCurveTo(billow - 4, -h - 42, -4, -h - 14); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  } else if (type === 'cannon') {
+    // Gunboat with raised bow & quarterdeck + cannon ports
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.52, -h - 8);
+    ctx.lineTo(-28, -h - 6);
+    ctx.lineTo(-24, -h + 2);
+    ctx.lineTo(18, -h + 2);
+    ctx.lineTo(22, -h - 12);
+    ctx.lineTo(w * 0.5, -h - 14);
+    ctx.lineTo(w * 0.38, 5);
+    ctx.lineTo(-w * 0.38, 5);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Mast & Sail
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.beginPath(); ctx.moveTo(2, -h + 2); ctx.lineTo(2, -h - 52); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath(); ctx.moveTo(2, -h - 50); ctx.quadraticCurveTo(billow, -h - 28, 2, -h - 10); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Bow & side cannons
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-w * 0.52 - 9, -h - 4, 13, 5);
+    ctx.beginPath(); ctx.arc(-6, -h * 0.42, 3, 0, Math.PI * 2); ctx.arc(10, -h * 0.42, 3, 0, Math.PI * 2); ctx.fill();
+  } else if (type === 'rammer') {
+    // Domed Turtleback Ironclad with Smokestack & Heavy Ramming Prow
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.52, -h + 6);
+    ctx.quadraticCurveTo(0, -h - 24, w * 0.48, -h + 6);
+    ctx.lineTo(w * 0.36, 5);
+    ctx.lineTo(-w * 0.4, 5);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Armored dorsal ribs & smokestack
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-16, -h - 4); ctx.lineTo(-16, 4); ctx.moveTo(16, -h - 4); ctx.lineTo(16, 4); ctx.stroke();
+    ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ffffff';
+    ctx.fillRect(-4, -h - 24, 9, 14); ctx.strokeRect(-4, -h - 24, 9, 14);
+
+    // Sharp Iron Prow
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.moveTo(-w * 0.5, -h + 10); ctx.lineTo(-w * 0.68, -h * 0.4); ctx.lineTo(-w * 0.44, 0); ctx.closePath(); ctx.fill();
+  } else if (type === 'catapult') {
+    // Stepped Siege Barge with Onboard Catapult Frame
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.52, -h - 6);
+    ctx.lineTo(-18, -h - 6);
+    ctx.lineTo(-14, -h + 2);
+    ctx.lineTo(18, -h + 2);
+    ctx.lineTo(22, -h - 10);
+    ctx.lineTo(w * 0.5, -h - 10);
+    ctx.lineTo(w * 0.4, 5);
+    ctx.lineTo(-w * 0.4, 5);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Onboard Siege Frame in center
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-10, -h + 2); ctx.lineTo(0, -h - 22); ctx.lineTo(10, -h + 2);
+    ctx.moveTo(0, -h + 2); ctx.lineTo(-16, -h - 14);
+    ctx.stroke();
+  } else if (type === 'dreadnought') {
+    // Massive 3-Tier Pirate Galleon with Bowsprit, Forecastle, Waist, Towering Stern Castle & Twin Masts
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.52, -h - 12);
+    ctx.lineTo(-36, -h - 12);
+    ctx.lineTo(-30, -h + 4);
+    ctx.lineTo(30, -h + 4);
+    ctx.lineTo(36, -h - 20);
+    ctx.lineTo(w * 0.52, -h - 22);
+    ctx.lineTo(w * 0.38, 6);
+    ctx.lineTo(-w * 0.38, 6);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Bowsprit spike
+    ctx.beginPath(); ctx.moveTo(-w * 0.52, -h - 10); ctx.lineTo(-w * 0.66, -h - 26); ctx.stroke();
+
+    // Twin Masts & Main Crow's Nest
+    ctx.strokeStyle = 'rgba(255,255,255,0.72)'; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-18, -h + 4); ctx.lineTo(-18, -h - 62);
+    ctx.moveTo(12, -h + 4); ctx.lineTo(12, -h - 86);
+    ctx.stroke();
+    ctx.fillStyle = '#0b0d10';
+    ctx.fillRect(2, -h - 68, 20, 7); ctx.strokeRect(2, -h - 68, 20, 7);
+
+    // Dual Black Sails
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.beginPath(); ctx.moveTo(12, -h - 84); ctx.quadraticCurveTo(billow + 8, -h - 52, 12, -h - 16); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-18, -h - 60); ctx.quadraticCurveTo(billow - 20, -h - 38, -18, -h - 12); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    // Broadside cannon ports
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-w * 0.52 - 10, -h - 6, 13, 5);
+    [-20, -4, 12, 28].forEach((px) => {
+      ctx.beginPath(); ctx.arc(px, -h * 0.4, 3.2, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+
+  // Dynamic Hull Cracks
+  if (cracks.length) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.3;
+    cracks.forEach((cr) => {
+      ctx.beginPath();
+      ctx.moveTo(cr.ox, cr.oy);
+      ctx.lineTo(cr.ox + Math.cos(cr.ang) * cr.len, cr.oy + Math.sin(cr.ang) * cr.len);
+      ctx.stroke();
+    });
   }
   ctx.restore();
 }
@@ -2544,7 +2732,7 @@ function drawRollingStones() {
     ctx.save();
     ctx.translate(ship.x, ship.y);
     ctx.rotate(ship.listAngle);
-    ctx.translate(rs.ox, -ship.cfg.height - rs.r * 0.4);
+    ctx.translate(rs.ox, getShipDeckY(ship.type, ship.cfg, rs.ox) - rs.r * 0.65);
     ctx.rotate(rs.rot);
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
