@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>THROW — 無盡投石守塔</title>
+  <meta name="description" content="免費開源的無盡投石車海戰守塔網頁遊戲。操作高塔投石車擊沉海盜船、升級九階防禦塔、切換多元投擲物與戰術技能。" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Top-Left: Projectile Switcher -->
+    <div id="projectileDock" class="hud-dock hud-top-left" aria-label="投擲物切換"></div>
+
+    <!-- Top-Center: Streamlined Monochrome Status Bar -->
+    <header id="topBar" class="hud-top-center">
+      <div class="stat-pill" id="hpPill" title="塔的耐久度">
+        <span class="ico" data-icon="hp"></span>
+        <div class="hp-wrap">
+          <div class="hp-bar-track"><div id="hpBarFill" class="hp-bar-fill"></div></div>
+          <span id="hpText" class="stat-val">100 / 100</span>
+        </div>
+        <span id="towerTierBadge" class="tier-badge">木塔</span>
+      </div>
+
+      <div class="stat-pill" title="金幣">
+        <span class="ico" data-icon="coin"></span>
+        <span id="coinText" class="stat-val">0</span>
+      </div>
+
+      <div class="stat-pill" title="當前強度等級">
+        <span class="ico" data-icon="intensity"></span>
+        <span id="intensityText" class="stat-val">Lv.1</span>
+      </div>
+
+      <div class="stat-pill hide-xs" title="存活時間">
+        <span class="ico" data-icon="clock"></span>
+        <span id="timeText" class="stat-val">00:00</span>
+      </div>
+
+      <div class="stat-pill hide-sm" title="擊敗數">
+        <span class="ico" data-icon="skull"></span>
+        <span id="killText" class="stat-val">0</span>
+      </div>
+
+      <button id="shopBtn" class="action-pill primary" title="商店（開啟時暫停時間）[S]">
+        <span class="ico" data-icon="shop"></span>
+        <span class="btn-label">商店</span>
+      </button>
+
+      <button id="pauseBtn" class="icon-pill" title="暫停 / 繼續 [P]" aria-label="暫停">
+        <span class="ico" data-icon="pause"></span>
+      </button>
+
+      <button id="soundBtn" class="icon-pill" title="音效開關 [M]" aria-label="音效">
+        <span class="ico" data-icon="soundOn"></span>
+      </button>
+    </header>
+
+    <!-- Top-Right: Skills Dock (Drag or Click) -->
+    <div id="skillDock" class="hud-dock hud-top-right" aria-label="技能欄"></div>
+
+    <!-- Clear Rush x3 Banner -->
+    <div id="rushBanner" class="rush-banner hidden">
+      <span class="ico" data-icon="rush"></span>
+      <span>清場加速 ×3</span>
+      <div class="rush-track"><div id="rushFill" class="rush-fill"></div></div>
+    </div>
+
+    <!-- Shield Active Indicator -->
+    <div id="shieldBanner" class="shield-banner hidden">
+      <span class="ico" data-icon="skill_shield"></span>
+      <span id="shieldTimerText">護盾 5.0s</span>
+    </div>
+
+    <!-- Skill Targeting Hint -->
+    <div id="targetHint" class="target-hint hidden">
+      <span class="ico" data-icon="ammoTab"></span>
+      <span id="targetHintText">點擊或拖曳至戰場位置施放技能（右鍵/ESC 取消）</span>
+      <button id="cancelTargetBtn" class="mini-pill">
+        <span class="ico" data-icon="close"></span>
+      </button>
+    </div>
+
+    <!-- Subtle Control Hint (fades out after first throw) -->
+    <div id="controlHint" class="control-hint">
+      <span>按住畫面往左下拉曳瞄準投擲 · 或點擊海盜直接拋射 · [S] 商店 · [1-5] 切換彈藥</span>
+    </div>
+
+    <!-- Drag Ghost for Skills -->
+    <div id="skillDragGhost" class="skill-drag-ghost hidden"></div>
+
+    <!-- Shop Modal (Time Paused) -->
+    <div id="shopModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+      <div class="modal-panel shop-panel">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="ico lg" data-icon="shop"></span>
+            <div>
+              <h2 id="shopTitle">軍械與加固商店</h2>
+              <p class="modal-sub">商店開啟期間 · 戰場時間已暫停</p>
+            </div>
+          </div>
+          <div class="modal-header-right">
+            <div class="stat-pill solid">
+              <span class="ico" data-icon="coin"></span>
+              <span id="shopCoinText" class="stat-val">0</span>
+            </div>
+            <button id="closeShopBtn" class="icon-pill" title="關閉商店並繼續 [ESC]">
+              <span class="ico" data-icon="close"></span>
+            </button>
+          </div>
+        </div>
+
+        <nav class="shop-tabs" role="tablist">
+          <button class="shop-tab active" data-tab="tower" role="tab">
+            <span class="ico" data-icon="towerTab"></span>
+            <span>塔的加固</span>
+          </button>
+          <button class="shop-tab" data-tab="projectile" role="tab">
+            <span class="ico" data-icon="ammoTab"></span>
+            <span>投擲物變更</span>
+          </button>
+          <button class="shop-tab" data-tab="skill" role="tab">
+            <span class="ico" data-icon="skillTab"></span>
+            <span>戰術技能</span>
+          </button>
+        </nav>
+
+        <div id="shopBody" class="shop-body"></div>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div id="pauseModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+      <div class="modal-panel compact-panel">
+        <div class="compact-icon" data-icon="pause"></div>
+        <h2>戰場已暫停</h2>
+        <p class="modal-sub">海浪靜止，隨時準備再次開火</p>
+        <div class="modal-actions">
+          <button id="resumeBtn" class="action-pill primary lg">
+            <span class="ico" data-icon="play"></span>
+            <span>繼續守衛</span>
+          </button>
+          <button id="pauseRestartBtn" class="action-pill lg">
+            <span class="ico" data-icon="restart"></span>
+            <span>重新開始</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameOverModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+      <div class="modal-panel compact-panel">
+        <div class="compact-icon" data-icon="skull"></div>
+        <h2>高塔陷落</h2>
+        <p class="modal-sub">無盡海盜攻勢突破了防線</p>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <span class="ico" data-icon="clock"></span>
+            <span class="summary-label">存活時間</span>
+            <strong id="finalTime">00:00</strong>
+          </div>
+          <div class="summary-card">
+            <span class="ico" data-icon="intensity"></span>
+            <span class="summary-label">最高強度</span>
+            <strong id="finalIntensity">Lv.1</strong>
+          </div>
+          <div class="summary-card">
+            <span class="ico" data-icon="skull"></span>
+            <span class="summary-label">擊敗敵人</span>
+            <strong id="finalKills">0</strong>
+          </div>
+          <div class="summary-card">
+            <span class="ico" data-icon="trophy"></span>
+            <span class="summary-label">歷史最佳</span>
+            <strong id="bestRecord">00:00</strong>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="restartBtn" class="action-pill primary lg">
+            <span class="ico" data-icon="restart"></span>
+            <span>再戰一局</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
