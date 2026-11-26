@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.2';
-import { sound } from './audio.js?v=2.2';
+import { ICONS } from './icons.js?v=2.3';
+import { sound } from './audio.js?v=2.3';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -189,39 +189,56 @@ const WEATHER_STATES = [
 
 const ENEMY_TYPES = {
   skiff: {
-    name: '海盜輕舟', minLv: 1, hp: 34, armor: 0, speed: 68, damage: 9, attackCd: 1.5,
-    stopFrac: 0.21, width: 78, height: 24, bounty: 14, ranged: false, air: false,
-    crewSlots: [{ ox: 0, oy: -20 }],
+    name: '海盜輕舟', minLv: 1, hp: 36, armor: 0, speed: 68, damage: 10, attackCd: 5.0,
+    width: 80, height: 24, bounty: 15, ranged: true, projType: 'cannonball', air: false,
+    crewSlots: [{ ox: 4, oy: -20, gunner: true }],
+    turrets: [{ ox: -18, oy: -22, scale: 0.85 }],
   },
   archer: {
-    name: '弓手帆船', minLv: 1, hp: 48, armor: 0, speed: 52, damage: 7, attackCd: 2.3,
-    stopFrac: 0.46, width: 94, height: 30, bounty: 22, ranged: true, projType: 'arrow', air: false,
-    crewSlots: [{ ox: 26, oy: -42 }, { ox: -4, oy: -78 }],
+    name: '弓手砲艇', minLv: 1, hp: 50, armor: 0, speed: 54, damage: 9, attackCd: 5.0,
+    width: 96, height: 30, bounty: 22, ranged: true, projType: 'arrow', air: false,
+    crewSlots: [{ ox: 28, oy: -42, gunner: true }, { ox: -4, oy: -78, gunner: false }],
+    turrets: [{ ox: -22, oy: -28, scale: 0.9 }, { ox: 18, oy: -42, scale: 0.8 }],
   },
   cannon: {
-    name: '加農砲艦', minLv: 2, hp: 86, armor: 3, speed: 42, damage: 17, attackCd: 3.0,
-    stopFrac: 0.56, width: 112, height: 34, bounty: 36, ranged: true, projType: 'cannonball', air: false,
-    crewSlots: [{ ox: -18, oy: -32 }, { ox: 32, oy: -46 }],
+    name: '雙砲加農艦', minLv: 2, hp: 88, armor: 3, speed: 44, damage: 18, attackCd: 5.0,
+    width: 114, height: 34, bounty: 38, ranged: true, projType: 'cannonball', air: false,
+    crewSlots: [{ ox: -12, oy: -32, gunner: true }, { ox: 34, oy: -46, gunner: true }],
+    turrets: [{ ox: -36, oy: -40, scale: 1.05 }, { ox: 22, oy: -46, scale: 0.95 }],
   },
   rammer: {
-    name: '裝甲衝撞艦', minLv: 3, hp: 140, armor: 8, speed: 58, damage: 25, attackCd: 1.9,
-    stopFrac: 0.22, width: 116, height: 38, bounty: 48, ranged: false, air: false,
-    crewSlots: [{ ox: -22, oy: -40 }, { ox: 24, oy: -38 }],
+    name: '鐵甲重砲艦', minLv: 3, hp: 142, armor: 8, speed: 56, damage: 22, attackCd: 5.0,
+    width: 118, height: 38, bounty: 50, ranged: true, projType: 'cannonball', air: false,
+    crewSlots: [{ ox: -20, oy: -40, gunner: true }, { ox: 24, oy: -38, gunner: true }],
+    turrets: [{ ox: -32, oy: -40, scale: 1.1 }, { ox: 6, oy: -48, scale: 1.0 }],
   },
   catapult: {
-    name: '海盜投石艦', minLv: 3, hp: 110, armor: 4, speed: 36, damage: 22, attackCd: 3.5,
-    stopFrac: 0.66, width: 120, height: 36, bounty: 54, ranged: true, projType: 'boulder', air: false,
-    crewSlots: [{ ox: -34, oy: -42 }, { ox: 34, oy: -46 }],
+    name: '海盜投石砲艦', minLv: 3, hp: 112, armor: 4, speed: 38, damage: 24, attackCd: 5.0,
+    width: 122, height: 36, bounty: 56, ranged: true, projType: 'boulder', air: false,
+    crewSlots: [{ ox: -32, oy: -42, gunner: true }, { ox: 34, oy: -46, gunner: true }],
+    turrets: [{ ox: -42, oy: -42, scale: 1.0 }, { ox: 22, oy: -46, scale: 1.0 }],
   },
   zeppelin: {
-    name: '海盜飛艇', minLv: 4, hp: 96, armor: 2, speed: 48, damage: 19, attackCd: 2.8,
-    stopFrac: 0.36, width: 118, height: 48, bounty: 60, ranged: true, projType: 'airbomb', air: true, flyFrac: 0.26,
-    crewSlots: [{ ox: 0, oy: 12 }],
+    name: '武裝飛艇', minLv: 4, hp: 98, armor: 2, speed: 50, damage: 20, attackCd: 5.0,
+    width: 120, height: 48, bounty: 62, ranged: true, projType: 'airbomb', air: true,
+    crewSlots: [{ ox: 0, oy: 12, gunner: true }],
+    turrets: [{ ox: -24, oy: 16, scale: 0.95 }, { ox: 18, oy: 16, scale: 0.85 }],
   },
   dreadnought: {
-    name: '無畏黑帆旗艦', minLv: 5, hp: 320, armor: 12, speed: 26, damage: 34, attackCd: 2.8,
-    stopFrac: 0.52, width: 174, height: 50, bounty: 150, ranged: true, projType: 'cannonball', air: false,
-    crewSlots: [{ ox: -54, oy: -62 }, { ox: -6, oy: -46 }, { ox: 54, oy: -70 }, { ox: 12, oy: -118 }], boss: true,
+    name: '無畏黑帆旗艦', minLv: 5, hp: 330, armor: 12, speed: 28, damage: 32, attackCd: 5.0,
+    width: 176, height: 50, bounty: 160, ranged: true, projType: 'cannonball', air: false,
+    crewSlots: [
+      { ox: -54, oy: -62, gunner: true },
+      { ox: -6, oy: -46, gunner: true },
+      { ox: 54, oy: -70, gunner: true },
+      { ox: 12, oy: -118, gunner: false },
+    ],
+    turrets: [
+      { ox: -68, oy: -62, scale: 1.2 },
+      { ox: -18, oy: -46, scale: 1.15 },
+      { ox: 40, oy: -70, scale: 1.15 },
+    ],
+    boss: true,
   },
 };
 
@@ -1241,8 +1258,11 @@ function spawnEnemy(forceType = null) {
   const bounty = Math.round(cfg.bounty * (1 + (lv - 1) * 0.22));
   const maxHp = Math.round(cfg.hp * scaleHp);
 
-  const stopBase = L.towerX + L.towerW * 0.5 + (L.worldW - L.towerX - 80) * cfg.stopFrac;
-  const stopX = clamp(stopBase + (cfg.ranged ? (Math.random() - 0.5) * 90 : 0), L.towerX + L.towerW * 0.5 + 32, L.worldW - 95);
+  const towerEdge = L.towerX + L.towerW * 0.5;
+  const battleSpan = Math.max(180, L.worldW - towerEdge);
+  const minStop = towerEdge + battleSpan * 0.15;
+  const maxStop = L.worldW - battleSpan * 0.15;
+  const stopX = minStop + Math.random() * (maxStop - minStop);
 
   state.enemies.push({
     id: Math.random().toString(36).slice(2),
@@ -1256,7 +1276,10 @@ function spawnEnemy(forceType = null) {
     speed: cfg.speed * scaleSpeed,
     damage: Math.round(cfg.damage * scaleDmg),
     stopX,
-    attackTimer: cfg.attackCd * (0.4 + Math.random() * 0.5),
+    stopped: false,
+    attackTimer: 1.35,
+    windup: 0,
+    fireRecoil: 0,
     bounty,
     burnTimer: 0,
     burnDps: 0,
@@ -1264,7 +1287,7 @@ function spawnEnemy(forceType = null) {
     bobPhase: Math.random() * Math.PI * 2,
     listAngle: 0,
     cracks: [],
-    crew: cfg.crewSlots.map((s) => ({ ox: s.ox, oy: s.oy, alive: true })),
+    crew: cfg.crewSlots.map((s) => ({ ox: s.ox, oy: s.oy, gunner: !!s.gunner, alive: true })),
     unmannedTimer: 0,
   });
 
@@ -1900,19 +1923,26 @@ function update(dt) {
       continue;
     }
 
-    // Move or Attack
+    if (e.fireRecoil > 0) e.fireRecoil = Math.max(0, e.fireRecoil - dt * 3.5);
+
+    // Move to random 70% middle zone; once stopped, fire every 5.0s with pre-fire gunner animation!
     const moveSpeed = e.speed * (state.rushTimer > 0 ? 1.85 : 1.0);
-    if (e.x > e.stopX) {
+    if (!e.stopped && e.x > e.stopX) {
       e.x = Math.max(e.stopX, e.x - moveSpeed * dt);
+      e.windup = 0;
+      if (e.x <= e.stopX) {
+        e.stopped = true;
+        e.attackTimer = 1.4; // Initial pre-fire windup shortly after anchoring
+      }
     } else {
+      e.stopped = true;
       e.attackTimer -= dt;
+      e.windup = e.attackTimer <= 1.2 ? clamp(1 - e.attackTimer / 1.2, 0, 1) : 0;
       if (e.attackTimer <= 0) {
-        e.attackTimer = e.cfg.attackCd;
-        if (e.cfg.ranged) fireEnemyProjectile(e);
-        else {
-          damageTower(e.damage, L.seaY - 46);
-          e.x += 14;
-        }
+        e.attackTimer = 5.0; // Fire every 5 seconds
+        e.windup = 0;
+        e.fireRecoil = 1.0;
+        fireEnemyProjectile(e);
       }
     }
   }
@@ -2115,26 +2145,37 @@ function detonatePlayerProj(p) {
 }
 
 function fireEnemyProjectile(e) {
-  const sx = e.x - e.cfg.width * 0.25;
-  const sy = e.cfg.air ? e.y + 18 : e.y - e.cfg.height - 10;
-  const tx = L.towerX + (Math.random() - 0.5) * 30;
-  const ty = L.towerTopY + 35 + Math.random() * (L.seaY - L.towerTopY - 60);
+  const turrets = e.cfg.turrets || [{ ox: -e.cfg.width * 0.25, oy: -e.cfg.height - 6, scale: 1 }];
+  // Fire from primary turret (or up to 2 turrets on multi-turret ships / boss)
+  const activeTurrets = e.cfg.boss ? turrets : [turrets[Math.floor(Math.random() * turrets.length)]];
 
-  if (e.cfg.projType === 'airbomb') {
-    const t = 1.25;
-    state.enemyProjs.push({ type: 'airbomb', x: sx, y: sy, vx: (tx - sx) / t, vy: 40, gravity: 460, r: 9, damage: e.damage });
-  } else {
-    const g = 520;
-    const t = clamp(Math.abs(sx - tx) / (L.isPortrait ? 280 : 360), 0.85, 1.85);
-    state.enemyProjs.push({
-      type: e.cfg.projType, x: sx, y: sy,
-      vx: (tx - sx) / t,
-      vy: (ty - sy - 0.5 * g * t * t) / t,
-      gravity: g,
-      r: e.cfg.projType === 'arrow' ? 5 : 8,
-      damage: e.damage,
+  activeTurrets.forEach((tr, idx) => {
+    const sx = e.x + tr.ox - 16 * (tr.scale || 1);
+    const sy = e.y + tr.oy - 6;
+    const tx = L.towerX + (Math.random() - 0.5) * 32;
+    const ty = L.towerTopY + 32 + Math.random() * (L.seaY - L.towerTopY - 56);
+
+    spawnParticles(sx, sy, 8, {
+      color: '#ffffff', speed: 120, gravity: -30, size: 3.4, life: 0.42, spread: 0.9, angle: Math.PI,
     });
-  }
+
+    const dmgEach = e.cfg.boss ? Math.round(e.damage * 0.55) : e.damage;
+    if (e.cfg.projType === 'airbomb') {
+      const t = 1.2 + idx * 0.15;
+      state.enemyProjs.push({ type: 'airbomb', x: sx, y: sy, vx: (tx - sx) / t, vy: 40, gravity: 460, r: 9, damage: dmgEach });
+    } else {
+      const g = 520;
+      const t = clamp(Math.abs(sx - tx) / (L.isPortrait ? 280 : 360), 0.85, 1.85) + idx * 0.12;
+      state.enemyProjs.push({
+        type: e.cfg.projType, x: sx, y: sy,
+        vx: (tx - sx) / t,
+        vy: (ty - sy - 0.5 * g * t * t) / t,
+        gravity: g,
+        r: e.cfg.projType === 'arrow' ? 5 : 8,
+        damage: dmgEach,
+      });
+    }
+  });
 }
 
 // ============================================================
@@ -2487,22 +2528,80 @@ function drawMines() {
   });
 }
 
-function drawPirateStickman(x, y) {
+function drawPirateStickman(x, y, windup = 0, isGunner = false) {
   ctx.save();
   ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#ffffff'; ctx.lineWidth = 2.1; ctx.lineCap = 'round';
+  const lean = isGunner && windup > 0 ? Math.sin(windup * Math.PI) * 5 : 0;
+  const armLift = isGunner && windup > 0 ? windup * 11 : 0;
+
   ctx.beginPath();
-  ctx.moveTo(x, y); ctx.lineTo(x, y - 15);
-  ctx.moveTo(x, y - 11); ctx.lineTo(x - 7, y - 7);
-  ctx.moveTo(x, y - 11); ctx.lineTo(x + 7, y - 7);
+  // Torso leans forward/back during firing prep
+  ctx.moveTo(x, y); ctx.lineTo(x + lean, y - 15);
+  // Left arm reaches toward turret / pulls lanyard
+  ctx.moveTo(x + lean, y - 11); ctx.lineTo(x - 9 + lean * 0.5, y - 8 - armLift * 0.6);
+  // Right arm raises torch / ramrod when winding up!
+  ctx.moveTo(x + lean, y - 11); ctx.lineTo(x + 7 + lean, y - 7 - armLift);
   ctx.stroke();
-  ctx.beginPath(); ctx.arc(x, y - 20, 4.3, 0, Math.PI * 2); ctx.fill();
+
+  // Glowing match/torch in gunner's raised hand right before firing
+  if (isGunner && windup > 0.25) {
+    ctx.fillStyle = windup > 0.75 ? '#ff7675' : '#ffeaa7';
+    ctx.beginPath(); ctx.arc(x + 7 + lean, y - 7 - armLift, 2.5 + windup * 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+  }
+
+  ctx.beginPath(); ctx.arc(x + lean, y - 20, 4.3, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.3;
-  ctx.beginPath(); ctx.moveTo(x - 8, y - 23); ctx.lineTo(x, y - 31); ctx.lineTo(x + 8, y - 23); ctx.closePath();
+  ctx.beginPath(); ctx.moveTo(x - 8 + lean, y - 23); ctx.lineTo(x + lean, y - 31); ctx.lineTo(x + 8 + lean, y - 23); ctx.closePath();
   ctx.fill(); ctx.stroke();
   ctx.restore();
 }
 
-function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks = []) {
+function drawDeckTurret(ox, oy, scale = 1, windup = 0, recoil = 0) {
+  ctx.save();
+  ctx.translate(ox, oy);
+  ctx.scale(scale, scale);
+
+  // Recoil & elevation during pre-fire windup
+  const kick = recoil * 5;
+  const elev = -0.26 - windup * 0.14;
+
+  // Heavy Naval Gun Carriage
+  ctx.fillStyle = '#0b0d10';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(-10, 0); ctx.lineTo(10, 0); ctx.lineTo(7, -8); ctx.lineTo(-7, -8);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Carriage wheels
+  ctx.beginPath(); ctx.arc(-6, -1, 3, 0, Math.PI * 2); ctx.arc(6, -1, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  // Cannon Barrel (points left toward player tower)
+  ctx.save();
+  ctx.translate(kick, -7);
+  ctx.rotate(elev);
+  ctx.fillStyle = '#1f2633';
+  ctx.fillRect(-19, -4, 23, 8);
+  ctx.strokeRect(-19, -4, 23, 8);
+  // Muzzle ring
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-21, -5, 3, 10);
+
+  // Pre-fire fuse spark on breech!
+  if (windup > 0.15) {
+    const pulse = 0.7 + Math.sin(state.elapsed * 28) * 0.3;
+    ctx.fillStyle = windup > 0.75 ? '#ff7675' : '#ffeaa7';
+    ctx.beginPath();
+    ctx.arc(3, -5, (2.2 + windup * 2.4) * pulse, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks = [], windup = 0, recoil = 0) {
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.translate(x, y);
@@ -2525,8 +2624,9 @@ function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks =
     ctx.beginPath(); ctx.ellipse(0, -14, w * 0.5, h * 0.45, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = 'rgba(255,255,255,0.28)';
     ctx.beginPath(); ctx.moveTo(-w * 0.46, -14); ctx.lineTo(w * 0.46, -14); ctx.stroke();
-    // Gondola + Pilot
-    crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, c.oy); });
+    // Gondola + Pilot + Belly Turrets
+    crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, c.oy, windup, c.gunner); });
+    (cfg.turrets || []).forEach((tr) => drawDeckTurret(tr.ox, tr.oy, tr.scale, windup, recoil));
     ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#0b0d10';
     ctx.fillRect(-20, 10, 40, 13); ctx.strokeRect(-20, 10, 40, 13);
     ctx.beginPath(); ctx.moveTo(-14, 4); ctx.lineTo(-14, 10); ctx.moveTo(14, 4); ctx.lineTo(14, 10); ctx.stroke();
@@ -2534,8 +2634,9 @@ function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks =
     return;
   }
 
-  // Draw surviving pirate crew at their varied elevation slots
-  crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, c.oy); });
+  // Draw surviving pirate crew (with pre-fire gunner animation) & deck turrets
+  crew.forEach((c) => { if (c.alive) drawPirateStickman(c.ox, c.oy, windup, c.gunner); });
+  (cfg.turrets || []).forEach((tr) => drawDeckTurret(tr.ox, tr.oy, tr.scale, windup, recoil));
 
   const billow = -18 + state.windX * 0.12;
   ctx.fillStyle = hullFill;
@@ -2699,7 +2800,7 @@ function drawEnemies() {
   // ZERO HP bars or HP numbers — purely physical visual state!
   state.enemies.forEach((e) => {
     const bobY = e.cfg.air ? Math.sin(e.bobPhase) * 6 : 0;
-    drawShipVisual(e.x, e.y + bobY, e.cfg, e.type, e.hitFlash > 0, e.listAngle, 1, e.crew, e.cracks);
+    drawShipVisual(e.x, e.y + bobY, e.cfg, e.type, e.hitFlash > 0, e.listAngle, 1, e.crew, e.cracks, e.windup, e.fireRecoil);
   });
 }
 
