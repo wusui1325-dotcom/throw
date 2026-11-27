@@ -1,5 +1,5 @@
-import { ICONS } from './icons.js?v=2.10';
-import { sound } from './audio.js?v=2.10';
+import { ICONS } from './icons.js?v=3.0';
+import { sound } from './audio.js?v=3.0';
 
 // ============================================================
 // CONFIG & DATA DEFINITIONS
@@ -36,6 +36,10 @@ function saveProgress() {
       skills: state.skills,
       addons: state.addons,
       forge: state.forge,
+      launcher: state.launcher,
+      unlockedLaunchers: state.unlockedLaunchers,
+      empTimer: state.empTimer,
+      gameSpeed: state.gameSpeed,
       weatherIdx: state.weatherIdx,
       weatherTimer: state.weatherTimer,
       windX: state.windX,
@@ -53,6 +57,8 @@ function saveProgress() {
         fireRecoil: e.fireRecoil, bounty: e.bounty, burnTimer: e.burnTimer,
         burnDps: e.burnDps, freezeTimer: e.freezeTimer || 0, bobPhase: e.bobPhase,
         listAngle: e.listAngle, cracks: e.cracks, crew: e.crew, unmannedTimer: e.unmannedTimer,
+        armorMod: e.armorMod || null, armorHp: e.armorHp || 0, empAmmo: !!e.empAmmo, missileAmmo: !!e.missileAmmo,
+        autoTurrets: e.autoTurrets || [], deployed: !!e.deployed, subDepth: e.subDepth || 0,
       })),
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
@@ -128,6 +134,10 @@ function loadSavedProgress() {
         if (typeof d.forge[k] === 'number') base.forge[k] = d.forge[k];
       });
     }
+    if (d.unlockedLaunchers) Object.assign(base.unlockedLaunchers, d.unlockedLaunchers);
+    if (d.launcher && base.unlockedLaunchers[d.launcher]) base.launcher = d.launcher;
+    base.empTimer = d.empTimer || 0;
+    base.gameSpeed = d.gameSpeed === 3 ? 3 : 1;
     if (Array.isArray(d.enemies)) {
       base.enemies = d.enemies
         .filter((e) => e && ENEMY_TYPES[e.type])
@@ -157,7 +167,22 @@ const TOWER_TIERS = [
   { id: 5, name: '水泥塔', maxHp: 870, armor: 14, cost: 640, color: '#343a42', debrisColor: '#b8c0cc', desc: '一體澆築厚重混凝土堡壘，極難撼動。' },
   { id: 6, name: '鐵架水泥塔', maxHp: 1190, armor: 19, cost: 920, color: '#2c333d', debrisColor: '#c4cbd6', desc: '混凝土主體搭配外部鐵架補強，防線升級。' },
   { id: 7, name: '鋼塔', maxHp: 1590, armor: 25, cost: 1300, color: '#1e252f', debrisColor: '#d0d7e2', desc: '流線型精鋼裝甲塔身，大幅減免敵艦衝擊。' },
-  { id: 8, name: '鋼筋水泥塔', maxHp: 2180, armor: 34, cost: 1850, color: '#242c36', debrisColor: '#e2e8f0', desc: '終極複合鋼筋混凝土要塞，屹立於無盡狂潮。' },
+  { id: 8, name: '鋼筋水泥塔', maxHp: 2180, armor: 34, cost: 1850, color: '#242c36', debrisColor: '#e2e8f0', desc: '複合鋼筋混凝土要塞，屹立於無盡狂潮。' },
+  { id: 9, name: '鈦合金塔', maxHp: 3100, armor: 46, cost: 2700, color: '#28313d', debrisColor: '#cbd5e1', desc: '航太級鈦合金外殼，極高韌性大幅抵抗重砲凹陷。' },
+  { id: 10, name: '複合裝甲堡壘', maxHp: 4400, armor: 62, cost: 3900, color: '#1d242e', debrisColor: '#e2e8f0', desc: '多層反應裝甲結構，正面硬扛導彈與旗艦齊射。' },
+  { id: 11, name: '碳纖維骨架塔', maxHp: 6200, armor: 82, cost: 5600, color: '#161b22', debrisColor: '#94a3b8', desc: '超輕高強碳纖網格骨架，將衝擊力均勻導入海崖。' },
+  { id: 12, name: '電磁力場塔', maxHp: 8800, armor: 108, cost: 8000, color: '#182433', debrisColor: '#a5f3fc', desc: '內建高能偏折線圈，極大削弱實體砲彈與衝擊動能。' },
+  { id: 13, name: '黑曜岩要塞', maxHp: 12500, armor: 140, cost: 11500, color: '#111419', debrisColor: '#cbd5e1', desc: '高密度黑曜岩鑄造巨碑，彷彿不可撼動的海防山峰。' },
+  { id: 14, name: '星際光棱巨塔', maxHp: 18000, armor: 185, cost: 16500, color: '#1d2838', debrisColor: '#ffffff', desc: '流線光棱終極堡壘，為無盡後期狂潮而生的神話防線。' },
+];
+
+const LAUNCHER_DEFS = [
+  { id: 'catapult', name: '木製投石車', icon: 'launcher_catapult', cost: 0, dmgMult: 1.0, speedMult: 1.0, gravMult: 1.0, windMult: 1.0, extraShots: 0, desc: '經典海岸投石機，操作平衡、手感純粹。' },
+  { id: 'trebuchet', name: '重型配重巨弩', icon: 'launcher_trebuchet', cost: 240, dmgMult: 1.32, speedMult: 1.15, gravMult: 0.95, windMult: 0.85, extraShots: 0, desc: '配重槓桿大幅強化動能，傷害 +32%、初速更快。' },
+  { id: 'twin', name: '雙臂連發投石機', icon: 'launcher_twin', cost: 520, dmgMult: 1.12, speedMult: 1.08, gravMult: 0.95, windMult: 0.85, extraShots: 1, desc: '雙臂同步拋射，每次投擲額外附帶 1 發高速副彈！' },
+  { id: 'cannon', name: '蒸汽加農砲', icon: 'launcher_cannon', cost: 920, dmgMult: 1.48, speedMult: 1.28, gravMult: 0.72, windMult: 0.45, extraShots: 0, desc: '低伸高速重砲彈道，下墜幅度大幅降低且無懼強風。' },
+  { id: 'railgun', name: '電磁軌道投射器', icon: 'launcher_railgun', cost: 1650, dmgMult: 1.75, speedMult: 1.45, gravMult: 0.55, windMult: 0.1, extraShots: 0, desc: '近乎直線的超高初速軌道彈道，幾乎完全無視風偏與重力。' },
+  { id: 'tricannon', name: '三聯艦砲塔', icon: 'launcher_tricannon', cost: 2900, dmgMult: 1.55, speedMult: 1.32, gravMult: 0.68, windMult: 0.3, extraShots: 2, desc: '終極三管齊射砲塔，單次投擲同時轟出 3 發主彈藥！' },
 ];
 
 const PROJECTILE_DEFS = [
@@ -377,7 +402,7 @@ const ADDON_DEFS = [
     name: '自動連弩',
     icon: 'addon_ballista',
     baseCost: 140,
-    maxLv: 5,
+    maxLv: 15,
     desc: '架設於塔身中層的自動弩砲，持續點射逼近的海盜船員與輕舟。',
   },
   {
@@ -385,7 +410,7 @@ const ADDON_DEFS = [
     name: '防空攔截網',
     icon: 'addon_aa',
     baseCost: 180,
-    maxLv: 5,
+    maxLv: 15,
     desc: '自動擊落來襲的敵方砲彈、弓箭與空投炸彈，並對海盜飛艇開火。',
   },
   {
@@ -393,7 +418,7 @@ const ADDON_DEFS = [
     name: '金幣磁石',
     icon: 'addon_magnet',
     baseCost: 120,
-    maxLv: 3,
+    maxLv: 10,
     desc: '自動吸附戰場掉落的實體金幣，並額外提升金幣收益倍率。',
   },
   {
@@ -401,7 +426,7 @@ const ADDON_DEFS = [
     name: '自動修復工匠',
     icon: 'addon_repairbot',
     baseCost: 160,
-    maxLv: 5,
+    maxLv: 15,
     desc: '駐守塔內的機械工匠，持續修補高塔結構裂縫與砲彈凹陷。',
   },
   {
@@ -409,7 +434,7 @@ const ADDON_DEFS = [
     name: '岸防迫擊砲',
     icon: 'addon_mortar',
     baseCost: 230,
-    maxLv: 5,
+    maxLv: 15,
     desc: '架設於塔身中段的自動迫擊砲，定時朝遠處敵艦發射高拋重砲。',
   },
   {
@@ -417,7 +442,7 @@ const ADDON_DEFS = [
     name: '風力穩定器',
     icon: 'addon_stabilizer',
     baseCost: 150,
-    maxLv: 4,
+    maxLv: 8,
     desc: '大幅抵消強側風對投石彈道的干擾（滿級完全無視風偏）。',
   },
 ];
@@ -428,7 +453,7 @@ const FORGE_DEFS = [
     name: '重型絞盤',
     icon: 'forge_power',
     baseCost: 110,
-    maxLv: 5,
+    maxLv: 999999,
     desc: '強化投石機扭力，永久提升所有投擲物破壞力（每級 +14%）。',
   },
   {
@@ -436,7 +461,7 @@ const FORGE_DEFS = [
     name: '快速裝填軸',
     icon: 'forge_reload',
     baseCost: 130,
-    maxLv: 5,
+    maxLv: 999999,
     desc: '優化拋射裝填機構，縮短所有投擲物充能時間（每級 -8%）。',
   },
   {
@@ -444,7 +469,7 @@ const FORGE_DEFS = [
     name: '海盜懸賞令',
     icon: 'forge_greed',
     baseCost: 125,
-    maxLv: 5,
+    maxLv: 999999,
     desc: '擊倒海盜與擊沉敵艦獲得更多懸賞金幣（每級 +15%）。',
   },
   {
@@ -452,7 +477,7 @@ const FORGE_DEFS = [
     name: '吸能複合護板',
     icon: 'forge_plating',
     baseCost: 145,
-    maxLv: 5,
+    maxLv: 999999,
     desc: '吸收敵軍砲彈動能，減少高塔凹陷與結構損耗（每級減傷 9%）。',
   },
 ];
@@ -506,6 +531,36 @@ const ENEMY_TYPES = {
     width: 82, height: 24, bounty: 28, ranged: true, projType: 'cannonball', air: false, explosive: true,
     crewSlots: [{ ox: 18, oy: -22, gunner: true }],
     turrets: [{ ox: -16, oy: -22, scale: 0.85 }],
+  },
+  suicideYacht: {
+    name: '自爆突擊遊艇', minLv: 2, hp: 32, armor: 0, speed: 122, damage: 46, attackCd: 5.0,
+    width: 72, height: 20, bounty: 32, ranged: false, air: false, kamikaze: true, explosive: true,
+    crewSlots: [{ ox: 12, oy: -20, gunner: false }],
+    turrets: [],
+  },
+  gunship: {
+    name: '砲艇直升機', minLv: 3, hp: 82, armor: 2, speed: 78, damage: 18, attackCd: 5.0,
+    width: 96, height: 34, bounty: 58, ranged: true, projType: 'cannonball', air: true, heli: true,
+    crewSlots: [{ ox: -12, oy: 4, gunner: true }],
+    turrets: [{ ox: -28, oy: 12, scale: 0.9 }],
+  },
+  miniTurretBoat: {
+    name: '單人砲台小艇', minLv: 999, hp: 28, armor: 0, speed: 72, damage: 11, attackCd: 5.0,
+    width: 58, height: 18, bounty: 16, ranged: true, projType: 'cannonball', air: false,
+    crewSlots: [{ ox: 8, oy: -18, gunner: true }],
+    turrets: [{ ox: -12, oy: -18, scale: 0.78 }],
+  },
+  carrier: {
+    name: '海盜運兵母艦', minLv: 4, hp: 210, armor: 8, speed: 32, damage: 20, attackCd: 5.0,
+    width: 152, height: 42, bounty: 92, ranged: true, projType: 'cannonball', air: false, carrier: true,
+    crewSlots: [{ ox: -42, oy: -46, gunner: true }, { ox: 42, oy: -52, gunner: true }],
+    turrets: [{ ox: -56, oy: -46, scale: 1.0 }, { ox: 28, oy: -52, scale: 0.95 }],
+  },
+  missileDestroyer: {
+    name: '導彈驅逐艦', minLv: 5, hp: 195, armor: 10, speed: 44, damage: 30, attackCd: 5.0,
+    width: 138, height: 38, bounty: 98, ranged: true, projType: 'missile', air: false,
+    crewSlots: [{ ox: -28, oy: -42, gunner: true }, { ox: 32, oy: -48, gunner: true }],
+    turrets: [{ ox: -46, oy: -42, scale: 1.05 }, { ox: 14, oy: -48, scale: 1.0 }],
   },
   sub: {
     name: '幽靈潛艇', minLv: 3, hp: 92, armor: 5, speed: 58, damage: 20, attackCd: 5.0,
@@ -598,6 +653,10 @@ const dom = {
   weatherText: document.getElementById('weatherText'),
   timeText: document.getElementById('timeText'),
   killText: document.getElementById('killText'),
+  speedBtn: document.getElementById('speedBtn'),
+  speedText: document.getElementById('speedText'),
+  empBanner: document.getElementById('empBanner'),
+  empTimerText: document.getElementById('empTimerText'),
   shopBtn: document.getElementById('shopBtn'),
   leaderboardBtn: document.getElementById('leaderboardBtn'),
   pauseBtn: document.getElementById('pauseBtn'),
@@ -651,14 +710,20 @@ let L = {
   offsetY: 0,
 };
 
+let cachedSkyGrad = null;
 function resizeCanvas() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   canvas.width = Math.floor(vw * dpr);
   canvas.height = Math.floor(vh * dpr);
   canvas.style.width = `${vw}px`;
   canvas.style.height = `${vh}px`;
+  cachedSkyGrad = ctx.createLinearGradient(0, 0, 0, vh);
+  cachedSkyGrad.addColorStop(0, '#090b0f');
+  cachedSkyGrad.addColorStop(0.55, '#141922');
+  cachedSkyGrad.addColorStop(0.78, '#1e2530');
+  cachedSkyGrad.addColorStop(1, '#0c1016');
 
   const isPortrait = vh > vw * 1.05;
   L.isPortrait = isPortrait;
@@ -763,6 +828,12 @@ function createInitialState() {
     skills,
     addons,
     forge,
+    launcher: 'catapult',
+    unlockedLaunchers: { catapult: true },
+    empTimer: 0,
+    gameSpeed: 1,
+    plumes: [],
+    wreckage: [],
     ballistaTimer: 0,
     aaTimer: 0,
     mortarTimer: 0,
@@ -897,6 +968,9 @@ function spawnWaterSplash(x, power = 1) {
   const sy = getWaveY(x);
   if (state.ripples.length > 24) state.ripples.shift();
   state.ripples.push({ x, y: sy + 4, r: 6, maxR: 26 + 22 * power, life: 0.75, maxLife: 0.75 });
+  if (power >= 0.8 && state.plumes.length < 16) {
+    state.plumes.push({ x, y: sy + 4, h: 10, maxH: 28 + 34 * power, w: 6 + 6 * power, life: 0.46, maxLife: 0.46 });
+  }
   spawnParticles(x, sy, Math.round(10 * power), {
     color: 'rgba(255,255,255,0.85)', speed: 155 * power, gravity: 480,
     size: 3.1, life: 0.6, spread: Math.PI * 0.65, angle: -Math.PI / 2,
@@ -1162,6 +1236,14 @@ function updateHud() {
   } else {
     dom.shieldBanner.classList.add('hidden');
   }
+  if (state.empTimer > 0) {
+    dom.empBanner.classList.remove('hidden');
+    dom.empTimerText.textContent = `EMP 癱瘓掛件 ${state.empTimer.toFixed(1)}s`;
+  } else {
+    dom.empBanner.classList.add('hidden');
+  }
+  dom.speedText.textContent = `${state.gameSpeed}×`;
+  dom.speedBtn.classList.toggle('speed-on', state.gameSpeed === 3);
 
   updateDockDisplays();
 }
@@ -1188,16 +1270,26 @@ function closeShop() {
 
 function getProjectileDamage(def, level) {
   const forgePower = 1 + ((state && state.forge ? state.forge.power : 0) * 0.14);
-  return Math.round(def.damage * (1 + (level - 1) * 0.28) * forgePower);
+  const lMult = getActiveLauncher().dmgMult;
+  return Math.round(def.damage * (1 + (level - 1) * 0.28) * forgePower * lMult);
 }
 function getEffectiveReload(def) {
   const forgeReload = Math.max(0.55, 1 - ((state && state.forge ? state.forge.reload : 0) * 0.08));
   const overdrive = (state && state.overdriveTimer > 0) ? 0.5 : 1.0;
   return def.reload * forgeReload * overdrive;
 }
+function getActiveLauncher() {
+  const id = (state && state.launcher) ? state.launcher : 'catapult';
+  return LAUNCHER_DEFS.find((l) => l.id === id) || LAUNCHER_DEFS[0];
+}
+function getEffectiveGravity() {
+  return GRAVITY * getActiveLauncher().gravMult;
+}
 function getEffectiveWind() {
   const stab = (state && state.addons ? state.addons.stabilizer : 0);
-  return state.windX * Math.max(0, 1 - stab * 0.25);
+  const empDisabled = state && state.empTimer > 0;
+  const stabMult = empDisabled ? 1 : Math.max(0, 1 - stab * 0.125);
+  return state.windX * stabMult * getActiveLauncher().windMult;
 }
 
 function renderShopBody() {
@@ -1266,7 +1358,7 @@ function renderShopBody() {
     PROJECTILE_DEFS.forEach((def) => {
       const ps = state.projectiles[def.id];
       const upgCost = Math.round(def.upgradeBase * Math.pow(1.65, ps.level - 1));
-      const maxLv = 6;
+      const maxLv = 999999;
       const card = document.createElement('div');
       card.className = 'shop-card';
       if (state.selectedProj === def.id) card.classList.add('owned-current');
@@ -1319,7 +1411,7 @@ function renderShopBody() {
         const def = PROJECTILE_DEFS.find((d) => d.id === id);
         const ps = state.projectiles[id];
         const upgCost = Math.round(def.upgradeBase * Math.pow(1.65, ps.level - 1));
-        if (!def || !ps.unlocked || ps.level >= 6 || state.coins < upgCost) return;
+        if (!def || !ps.unlocked || ps.level >= 999999 || state.coins < upgCost) return;
         state.coins -= upgCost;
         ps.level += 1;
         sound.playBuy();
@@ -1379,7 +1471,7 @@ function renderShopBody() {
       card.innerHTML = `
         <div class="card-top">
           <div class="card-icon"><span class="ico">${ICONS[def.icon]}</span></div>
-          <div class="card-title-wrap"><div class="card-title">${def.name} <span class="card-tag">${lv > 0 ? `Lv.${lv}/${def.maxLv}` : '未安裝'}</span></div></div>
+          <div class="card-title-wrap"><div class="card-title">${def.name} <span class="card-tag">${lv > 0 ? `Lv.${lv}${def.maxLv > 999 ? ' ∞' : '/' + def.maxLv}` : '未安裝'}</span></div></div>
         </div>
         <p class="card-desc">${def.desc}</p>
         ${btnHtml}
@@ -1402,6 +1494,65 @@ function renderShopBody() {
         updateHud();
       });
     });
+  } else if (shopTab === 'launcher') {
+    LAUNCHER_DEFS.forEach((def) => {
+      const unlocked = !!state.unlockedLaunchers[def.id];
+      const equipped = state.launcher === def.id;
+      const card = document.createElement('div');
+      card.className = 'shop-card';
+      if (equipped) card.classList.add('owned-current');
+
+      let btnHtml = '';
+      if (equipped) {
+        btnHtml = `<button class="buy-btn equipped" disabled><span class="ico">${ICONS.check}</span><span>目前裝備中</span></button>`;
+      } else if (unlocked) {
+        btnHtml = `<button class="buy-btn" data-equip-launcher="${def.id}"><span class="ico">${ICONS.play}</span><span>切換裝備</span></button>`;
+      } else {
+        btnHtml = `<button class="buy-btn" ${state.coins >= def.cost ? '' : 'disabled'} data-buy-launcher="${def.id}">
+          <span class="ico">${ICONS.coin}</span><span>購買並裝備 · ${def.cost}G</span></button>`;
+      }
+
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="card-icon"><span class="ico">${ICONS[def.icon]}</span></div>
+          <div class="card-title-wrap"><div class="card-title">${def.name} <span class="card-tag">${equipped ? '使用中' : unlocked ? '已擁有' : '未解鎖'}</span></div></div>
+        </div>
+        <p class="card-desc">${def.desc}</p>
+        <div class="card-stats">
+          <span class="card-stat-chip">威力 ×${def.dmgMult.toFixed(2)}</span>
+          <span class="card-stat-chip">額外齊射 +${def.extraShots}</span>
+        </div>
+        ${btnHtml}
+      `;
+      dom.shopBody.appendChild(card);
+    });
+
+    dom.shopBody.querySelectorAll('[data-buy-launcher]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.buyLauncher;
+        const def = LAUNCHER_DEFS.find((l) => l.id === id);
+        if (!def || state.unlockedLaunchers[id] || state.coins < def.cost) return;
+        state.coins -= def.cost;
+        state.unlockedLaunchers[id] = true;
+        state.launcher = id;
+        sound.playBuy();
+        addPopup(L.towerX, L.towerTopY - 30, `更換投擲器：${def.name}`, '#ffffff', 16);
+        saveProgress();
+        renderShopBody();
+        updateHud();
+      });
+    });
+    dom.shopBody.querySelectorAll('[data-equip-launcher]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.equipLauncher;
+        if (!state.unlockedLaunchers[id]) return;
+        state.launcher = id;
+        sound.playBuy();
+        saveProgress();
+        renderShopBody();
+        updateHud();
+      });
+    });
   } else if (shopTab === 'forge') {
     FORGE_DEFS.forEach((def) => {
       const lv = state.forge[def.id];
@@ -1418,7 +1569,7 @@ function renderShopBody() {
       card.innerHTML = `
         <div class="card-top">
           <div class="card-icon"><span class="ico">${ICONS[def.icon]}</span></div>
-          <div class="card-title-wrap"><div class="card-title">${def.name} <span class="card-tag">Lv.${lv}/${def.maxLv}</span></div></div>
+          <div class="card-title-wrap"><div class="card-title">${def.name} <span class="card-tag">Lv.${lv}${def.maxLv > 999 ? ' ∞' : '/' + def.maxLv}</span></div></div>
         </div>
         <p class="card-desc">${def.desc}</p>
         ${btnHtml}
@@ -1667,12 +1818,17 @@ function fireProjectile(vx, vy) {
     });
   };
 
-  if (id === 'triple') {
-    spawnOne(vx * 0.94, vy * 0.94 - 45);
-    spawnOne(vx, vy);
-    spawnOne(vx * 1.06, vy * 1.05 + 42);
+  const ln = getActiveLauncher();
+  const baseVx = vx * ln.speedMult;
+  const baseVy = vy * ln.speedMult;
+  const totalVolley = (id === 'triple' ? 3 : 1) + ln.extraShots;
+  if (totalVolley === 1) {
+    spawnOne(baseVx, baseVy);
   } else {
-    spawnOne(vx, vy);
+    for (let k = 0; k < totalVolley; k++) {
+      const frac = totalVolley === 1 ? 0 : (k / (totalVolley - 1) - 0.5);
+      spawnOne(baseVx * (1 + frac * 0.13), baseVy * (1 + frac * 0.1) + frac * 76);
+    }
   }
   updateDockDisplays();
   return true;
@@ -1686,7 +1842,7 @@ function solveQuickBallistic(tx, ty) {
   const t = clamp(dx / (L.isPortrait ? 470 : 620), 0.5, 1.5);
   // Compensate slightly for wind so tap-to-throw feels responsive, while drag gives full manual mastery
   const vx = (dx - 0.5 * getEffectiveWind() * t * t) / t;
-  const vy = (dy - 0.5 * GRAVITY * t * t) / t;
+  const vy = (dy - 0.5 * getEffectiveGravity() * t * t) / t;
   return { vx: clamp(vx, 140, 1100), vy: clamp(vy, -960, -110) };
 }
 
@@ -1716,17 +1872,40 @@ function spawnEnemy(forceType = null) {
   }
 
   const cfg = ENEMY_TYPES[typeKey];
-  const scaleHp = 1 + (lv - 1) * 0.27;
-  const scaleDmg = 1 + (lv - 1) * 0.16;
-  const scaleSpeed = (1 + Math.min(0.65, (lv - 1) * 0.05)) * (L.isPortrait ? 0.72 : 1.0);
-  const bounty = Math.round(cfg.bounty * (1 + (lv - 1) * 0.22));
-  const maxHp = Math.round(cfg.hp * scaleHp);
+  const scaleHp = Math.pow(1.22, lv - 1);
+  const scaleDmg = 1 + (lv - 1) * 0.22;
+  const scaleSpeed = (1 + (lv - 1) * 0.045) * (L.isPortrait ? 0.74 : 1.0);
+  const bounty = Math.round(cfg.bounty * (1 + (lv - 1) * 0.28));
+  let maxHp = Math.round(cfg.hp * scaleHp);
 
   const towerEdge = L.towerX + L.towerW * 0.5;
   const battleSpan = Math.max(180, L.worldW - towerEdge);
   const minStop = towerEdge + battleSpan * 0.15;
   const maxStop = L.worldW - battleSpan * 0.15;
-  const stopX = minStop + Math.random() * (maxStop - minStop);
+  const stopX = cfg.kamikaze ? (towerEdge + 20) : (minStop + Math.random() * (maxStop - minStop));
+
+  // Roll dynamic variants at Lv.2+
+  let armorMod = null;
+  let armorHp = 0;
+  if (!cfg.air && !cfg.kamikaze && lv >= 2 && Math.random() < Math.min(0.55, 0.12 + lv * 0.05)) {
+    armorMod = Math.random() < 0.5 ? 'ironFrame' : 'exoCage';
+    armorHp = Math.round(maxHp * (armorMod === 'exoCage' ? 0.55 : 0.4));
+    maxHp += Math.round(maxHp * 0.25);
+  }
+  const empAmmo = cfg.ranged && lv >= 3 && Math.random() < Math.min(0.32, 0.08 + lv * 0.03);
+  const missileAmmo = (cfg.projType === 'missile') || (cfg.ranged && !empAmmo && lv >= 4 && Math.random() < Math.min(0.35, 0.08 + lv * 0.03));
+
+  // Unmanned Autonomous Deck Turrets (up to 5 per ship!)
+  const autoTurrets = [];
+  if (!cfg.air && !cfg.kamikaze && lv >= 3 && Math.random() < Math.min(0.5, 0.1 + lv * 0.04)) {
+    const count = clamp(1 + Math.floor(Math.random() * Math.min(5, Math.floor(lv / 2))), 1, 5);
+    const spanW = cfg.width * 0.72;
+    for (let u = 0; u < count; u++) {
+      const frac = count === 1 ? 0 : (u / (count - 1) - 0.5);
+      const uox = frac * spanW;
+      autoTurrets.push({ ox: uox, oy: getShipDeckY(typeKey, cfg, uox), cd: 1.5 + Math.random() * 2.5 });
+    }
+  }
 
   state.enemies.push({
     id: Math.random().toString(36).slice(2),
@@ -1754,6 +1933,13 @@ function spawnEnemy(forceType = null) {
     cracks: [],
     crew: cfg.crewSlots.map((s) => ({ ox: s.ox, oy: s.oy, gunner: !!s.gunner, alive: true })),
     unmannedTimer: 0,
+    armorMod,
+    armorHp,
+    empAmmo,
+    missileAmmo,
+    autoTurrets,
+    deployed: false,
+    subDepth: cfg.stealthSub ? 1.0 : 0,
   });
 
   state.hasSpawnedAny = true;
@@ -2060,7 +2246,7 @@ function update(dt) {
   }
 
   state.elapsed += dt;
-  const newIntensity = 1 + Math.floor(state.elapsed / 24);
+  const newIntensity = 1 + Math.floor(state.elapsed / 14);
   if (newIntensity > state.intensity) {
     state.intensity = newIntensity;
     addPopup(L.worldW * 0.5, 130, `強度提升 · Lv.${state.intensity}`, '#ffffff', 18);
@@ -2092,6 +2278,7 @@ function update(dt) {
   if (state.shieldTimer > 0) state.shieldTimer = Math.max(0, state.shieldTimer - dt);
   if (state.slowmoTimer > 0) state.slowmoTimer = Math.max(0, state.slowmoTimer - dt);
   if (state.overdriveTimer > 0) state.overdriveTimer = Math.max(0, state.overdriveTimer - dt);
+  if (state.empTimer > 0) state.empTimer = Math.max(0, state.empTimer - dt);
 
   // Floating Sea Supply Crates
   state.crateTimer -= dt;
@@ -2151,12 +2338,13 @@ function update(dt) {
   // Tower Attachments (Auto Ballista & AA Flak)
   updateTowerAddons(dt);
 
-  // Spawning
-  const baseInterval = Math.max(1.15, 3.6 - state.intensity * 0.24);
+  // Spawning (faster scaling, multi-ship wave bursts, no upper cap!)
+  const baseInterval = Math.max(0.55, 2.9 - state.intensity * 0.16);
   state.spawnTimer -= dt * rushMult;
   if (state.spawnTimer <= 0) {
-    spawnEnemy();
-    state.spawnTimer = baseInterval * (0.75 + Math.random() * 0.5);
+    const burst = 1 + Math.floor(state.intensity / 4) + (Math.random() < Math.min(0.75, state.intensity * 0.06) ? 1 : 0);
+    for (let b = 0; b < Math.min(5, burst); b++) spawnEnemy();
+    state.spawnTimer = baseInterval * (0.7 + Math.random() * 0.45);
   }
   if (state.intensity >= 5) {
     state.bossTimer -= dt;
@@ -2174,7 +2362,7 @@ function update(dt) {
     if (p.trail.length > 13) p.trail.shift();
 
     p.vx += getEffectiveWind() * dt;
-    p.vy += GRAVITY * dt;
+    p.vy += getEffectiveGravity() * dt;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.rot += dt * 7.5;
@@ -2480,7 +2668,11 @@ function update(dt) {
     const dmgRatio = 1 - clamp(e.hp / e.maxHp, 0, 1);
     const waveTilt = Math.cos(e.bobPhase) * (0.04 + WEATHER_STATES[state.weatherIdx].waveAmp * 0.005);
     e.listAngle = waveTilt + (e.cfg.air ? 0 : dmgRatio * 0.28 * (i % 2 === 0 ? 1 : -1));
-    if (!e.cfg.air) e.y = getWaveY(e.x) + dmgRatio * 12;
+    if (e.cfg.stealthSub) {
+      const targetDepth = e.stopped ? 0 : 1.0;
+      e.subDepth += (targetDepth - (e.subDepth || 0)) * Math.min(1, dt * 2.5);
+    }
+    if (!e.cfg.air) e.y = getWaveY(e.x) + dmgRatio * 12 + (e.subDepth || 0) * 18;
 
     // Smoke when heavily damaged
     if (dmgRatio > 0.45 && Math.random() < dt * 7) {
@@ -2501,9 +2693,31 @@ function update(dt) {
       if (e.hp <= 0) { sinkEnemyShip(e, false); continue; }
     }
 
-    // Unmanned ship slowly takes on water and sinks!
+    // Autonomous Unmanned Deck Turrets keep firing even if human crew are gone!
+    if (e.stopped && e.autoTurrets && e.autoTurrets.length > 0 && e.freezeTimer <= 0) {
+      e.autoTurrets.forEach((ut) => {
+        ut.cd -= enemyDt;
+        if (ut.cd <= 0) {
+          ut.cd = 4.2 + Math.random() * 1.4;
+          const sx = e.x + ut.ox - 10;
+          const sy = e.y + ut.oy - 8;
+          const tx = L.towerX + (Math.random() - 0.5) * 28;
+          const ty = L.towerTopY + 40 + Math.random() * (L.seaY - L.towerTopY - 70);
+          const g = 520;
+          const t = clamp(Math.abs(sx - tx) / 340, 0.85, 1.8);
+          state.enemyProjs.push({
+            type: 'cannonball', x: sx, y: sy,
+            vx: (tx - sx) / t, vy: (ty - sy - 0.5 * g * t * t) / t,
+            gravity: g, r: 6.5, damage: Math.round(e.damage * 0.55),
+          });
+          spawnParticles(sx, sy, 4, { color: '#ff7675', speed: 90, life: 0.28 });
+        }
+      });
+    }
+
+    // Unmanned ship slowly takes on water and sinks (unless protected by unmanned turrets!)
     const aliveCrew = e.crew.filter((c) => c.alive).length;
-    if (aliveCrew === 0) {
+    if (aliveCrew === 0 && (!e.autoTurrets || e.autoTurrets.length === 0)) {
       e.unmannedTimer += dt;
       e.hp -= e.maxHp * 0.25 * dt;
       if (e.unmannedTimer > 2.4 || e.hp <= 0) {
@@ -2531,8 +2745,48 @@ function update(dt) {
       }
       e.windup = 0;
       if (e.x <= e.stopX) {
+        if (e.cfg.kamikaze) {
+          // Suicide yacht slams straight into the tower!
+          damageTower(e.damage * 1.6, L.seaY - 40);
+          sinkEnemyShip(e, true);
+          continue;
+        }
         e.stopped = true;
-        e.attackTimer = 1.4; // Initial pre-fire windup shortly after anchoring
+        e.attackTimer = 1.4;
+        // Carrier deploys 2-6 miniTurretBoats upon anchoring!
+        if (e.cfg.carrier && !e.deployed) {
+          e.deployed = true;
+          const deployN = 2 + Math.floor(Math.random() * 5); // 2 to 6 boats
+          addPopup(e.x, e.y - 68, `運兵母艦釋放 ${deployN} 艘砲艇！`, '#ffeaa7', 15);
+          for (let d = 0; d < deployN; d++) {
+            const mCfg = ENEMY_TYPES.miniTurretBoat;
+            const towerEdge = L.towerX + L.towerW * 0.5;
+            const span = Math.max(160, L.worldW - towerEdge);
+            const mStop = towerEdge + span * (0.15 + Math.random() * 0.65);
+            state.enemies.push({
+              id: Math.random().toString(36).slice(2),
+              type: 'miniTurretBoat',
+              cfg: mCfg,
+              x: e.x + (d - deployN * 0.5) * 28,
+              y: L.seaY,
+              hp: Math.round(mCfg.hp * Math.pow(1.18, state.intensity - 1)),
+              maxHp: Math.round(mCfg.hp * Math.pow(1.18, state.intensity - 1)),
+              armor: 0,
+              speed: mCfg.speed * (L.isPortrait ? 0.74 : 1.0),
+              damage: Math.round(mCfg.damage * (1 + (state.intensity - 1) * 0.18)),
+              stopX: mStop,
+              stopped: false,
+              attackTimer: 1.8 + d * 0.4,
+              windup: 0, fireRecoil: 0,
+              bounty: Math.round(mCfg.bounty * (1 + (state.intensity - 1) * 0.2)),
+              burnTimer: 0, burnDps: 0, freezeTimer: 0, hitFlash: 0,
+              bobPhase: Math.random() * 6, listAngle: 0, cracks: [],
+              crew: mCfg.crewSlots.map((s) => ({ ox: s.ox, oy: s.oy, gunner: !!s.gunner, alive: true })),
+              unmannedTimer: 0, armorMod: null, armorHp: 0, empAmmo: false, missileAmmo: false,
+              autoTurrets: [], deployed: true, subDepth: 0,
+            });
+          }
+        }
       }
     } else {
       e.stopped = true;
@@ -2550,10 +2804,30 @@ function update(dt) {
   // Update Enemy Projectiles
   for (let i = state.enemyProjs.length - 1; i >= 0; i--) {
     const ep = state.enemyProjs[i];
-    ep.vx += state.windX * 0.45 * enemyDt;
-    ep.vy += ep.gravity * enemyDt;
-    ep.x += ep.vx * enemyDt;
-    ep.y += ep.vy * enemyDt;
+    if (ep.type === 'missile') {
+      if (ep.phase === 'rise') {
+        ep.riseTimer -= enemyDt;
+        ep.y += ep.vy * enemyDt;
+        if (Math.random() < 0.6) spawnParticles(ep.x, ep.y + 8, 1, { color: 'rgba(255,255,255,0.7)', speed: 30, gravity: 20, size: 2.5, life: 0.35 });
+        if (ep.riseTimer <= 0) {
+          ep.phase = 'dive';
+          const dx = ep.tx - ep.x, dy = ep.ty - ep.y;
+          const d = Math.max(1, Math.hypot(dx, dy));
+          const spd = 760;
+          ep.vx = (dx / d) * spd;
+          ep.vy = (dy / d) * spd;
+        }
+      } else {
+        ep.x += ep.vx * enemyDt;
+        ep.y += ep.vy * enemyDt;
+        if (Math.random() < 0.7) spawnParticles(ep.x, ep.y, 1, { color: '#ffb142', speed: 40, gravity: 0, size: 2.4, life: 0.25 });
+      }
+    } else {
+      ep.vx += state.windX * 0.45 * enemyDt;
+      ep.vy += ep.gravity * enemyDt;
+      ep.x += ep.vx * enemyDt;
+      ep.y += ep.vy * enemyDt;
+    }
 
     if (
       ep.x - ep.r <= L.towerX + L.towerW * 0.52 &&
@@ -2561,6 +2835,11 @@ function update(dt) {
       ep.y + ep.r >= L.towerTopY - 10 &&
       ep.y - ep.r <= L.seaY
     ) {
+      if (ep.type === 'emp' && state.shieldTimer <= 0) {
+        state.empTimer = 12.0;
+        addPopup(L.towerX, L.towerTopY - 36, 'EMP 命中！掛件癱瘓 12 秒', '#a5f3fc', 16);
+        spawnParticles(L.towerX, ep.y, 20, { color: '#a5f3fc', speed: 200, gravity: 40, size: 3.5, life: 0.65 });
+      }
       damageTower(ep.damage, ep.y);
       state.enemyProjs.splice(i, 1);
       continue;
@@ -2583,6 +2862,7 @@ function update(dt) {
 }
 
 function updateTowerAddons(dt) {
+  if (state.empTimer > 0) return; // Disabled by EMP!
   // 1. Auto Ballista
   if (state.addons.ballista > 0 && state.enemies.length > 0) {
     state.ballistaTimer -= dt;
@@ -2611,7 +2891,7 @@ function updateTowerAddons(dt) {
       const ax = L.towerX + L.towerW * 0.35;
       const ay = L.towerTopY + 14;
       // Priority 1: Incoming enemy projectile
-      const threat = state.enemyProjs.find((ep) => ep.x < L.worldW * 0.62);
+      const threat = state.enemyProjs.find((ep) => !ep.uninterceptable && ep.x < L.worldW * 0.65);
       if (threat) {
         state.aaTimer = Math.max(0.4, 1.7 - lv * 0.26);
         state.tracers.push({ x1: ax, y1: ay, x2: threat.x, y2: threat.y, life: 0.16, color: '#a5f3fc' });
@@ -2793,6 +3073,13 @@ function updateVisualSubsystems(dt) {
     if (pp.life <= 0) state.popups.splice(i, 1);
   }
 
+  // Water Plumes
+  for (let i = state.plumes.length - 1; i >= 0; i--) {
+    const pl = state.plumes[i];
+    pl.life -= dt;
+    pl.h = pl.maxH * Math.sin((1 - pl.life / pl.maxLife) * Math.PI);
+    if (pl.life <= 0) state.plumes.splice(i, 1);
+  }
   // Water Ripples
   for (let i = state.ripples.length - 1; i >= 0; i--) {
     const rp = state.ripples[i];
@@ -2884,7 +3171,22 @@ function fireEnemyProjectile(e) {
     });
 
     const dmgEach = e.cfg.boss ? Math.round(e.damage * 0.55) : e.damage;
-    if (e.cfg.projType === 'airbomb') {
+    if (e.empAmmo) {
+      const g = 500;
+      const t = clamp(Math.abs(sx - tx) / 340, 0.85, 1.7);
+      state.enemyProjs.push({
+        type: 'emp', uninterceptable: true, x: sx, y: sy,
+        vx: (tx - sx) / t, vy: (ty - sy - 0.5 * g * t * t) / t,
+        gravity: g, r: 9.5, damage: Math.round(dmgEach * 0.7),
+      });
+    } else if (e.missileAmmo) {
+      // Vertical Launch Missile: shoots straight UP then dives fast at tower!
+      state.enemyProjs.push({
+        type: 'missile', phase: 'rise', riseTimer: 0.55,
+        x: sx, y: sy - 6, vx: 0, vy: -520, tx, ty,
+        gravity: 0, r: 7.5, damage: Math.round(dmgEach * 1.15),
+      });
+    } else if (e.cfg.projType === 'airbomb') {
       const t = 1.2 + idx * 0.15;
       state.enemyProjs.push({ type: 'airbomb', x: sx, y: sy, vx: (tx - sx) / t, vy: 40, gravity: 460, r: 9, damage: dmgEach });
     } else {
@@ -2906,18 +3208,13 @@ function fireEnemyProjectile(e) {
 // CANVAS RENDERING
 // ============================================================
 function render() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  const sky = ctx.createLinearGradient(0, 0, 0, vh);
-  sky.addColorStop(0, '#090b0f');
-  sky.addColorStop(0.55, '#141922');
-  sky.addColorStop(0.78, '#1e2530');
-  sky.addColorStop(1, '#0c1016');
-  ctx.fillStyle = sky;
+  ctx.fillStyle = cachedSkyGrad || '#0b0d10';
   ctx.fillRect(0, 0, vw, vh);
 
   if (state.lightningFlash > 0) {
@@ -3143,9 +3440,38 @@ function drawCliffAndTower() {
   } else if (tid === 6) {
     ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2;
     ctx.strokeRect(x - 5, topY + 8, w + 10, h - 10);
-  } else if (tid >= 7) {
+  } else if (tid === 7 || tid === 8) {
     ctx.strokeStyle = 'rgba(255,255,255,0.42)'; ctx.lineWidth = 1.8;
     ctx.beginPath(); ctx.moveTo(x + 14, topY); ctx.lineTo(x + 14, L.seaY); ctx.moveTo(x + w - 14, topY); ctx.lineTo(x + w - 14, L.seaY); ctx.stroke();
+  } else if (tid >= 9) {
+    // T10-T15 high-tech / fortress architectural accents
+    ctx.strokeStyle = tid >= 12 ? 'rgba(165,243,252,0.58)' : 'rgba(255,255,255,0.52)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(x + 11, topY); ctx.lineTo(x + 11, L.seaY);
+    ctx.moveTo(x + w - 11, topY); ctx.lineTo(x + w - 11, L.seaY);
+    ctx.stroke();
+    // Diagonal truss / armor chevrons
+    for (let y = topY + 26; y < L.seaY - 12; y += 30) {
+      ctx.beginPath();
+      ctx.moveTo(x + 11, y); ctx.lineTo(x + w * 0.5, y - 10); ctx.lineTo(x + w - 11, y);
+      ctx.stroke();
+    }
+    if (tid >= 12) {
+      // Glowing energy core spine (EM / Obsidian / Prism Citadel)
+      const pulse = 0.55 + Math.sin(state.elapsed * 5) * 0.25;
+      ctx.strokeStyle = tid === 14 ? `rgba(255,255,255,${pulse})` : `rgba(165,243,252,${pulse})`;
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(x + w * 0.5, topY + 12);
+      ctx.lineTo(x + w * 0.5, L.seaY - 12);
+      ctx.stroke();
+    }
+    if (tid === 14) {
+      // Prism crown halo
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.6;
+      ctx.strokeRect(x - 10, topY - 10, w + 20, 6);
+    }
   }
 
   // Dynamic Structural Cracks
@@ -3236,37 +3562,119 @@ function drawCatapultAndStickman() {
   ctx.stroke();
   ctx.beginPath(); ctx.arc(sx + (state.aiming ? -3 : 0), sy - 33, 5, 0, Math.PI * 2); ctx.fill();
 
-  // Catapult frame
-  ctx.beginPath();
-  ctx.moveTo(baseX - 9, baseY - 5); ctx.lineTo(baseX + 24, baseY - 5);
-  ctx.moveTo(baseX + 3, baseY - 5); ctx.lineTo(baseX + 13, baseY - 31); ctx.lineTo(baseX + 20, baseY - 5);
-  ctx.stroke();
-
-  ctx.fillStyle = '#0b0d10';
-  [baseX - 3, baseX + 20].forEach((wx) => {
-    ctx.beginPath(); ctx.arc(wx, baseY - 4, 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  });
-
-  // Dynamic throwing arm
-  let armAngle = -0.85;
-  if (state.aiming) armAngle = -0.85 - clamp(Math.hypot(state.aimVx, state.aimVy) / 1150, 0, 1) * 1.35;
-  else if (state.catapultRecoil > 0) armAngle = -0.85 + state.catapultRecoil * 0.95;
-
-  const px = baseX + 9, py = baseY - 11;
-  const tx = px + Math.cos(armAngle) * 34;
-  const ty = py + Math.sin(armAngle) * 34;
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke();
-
+  const lid = state.launcher || 'catapult';
+  const aimAng = state.aiming ? Math.atan2(state.aimVy, Math.max(40, state.aimVx)) : -0.55;
+  const recoilShift = state.catapultRecoil * 7;
   const ps = state.projectiles[state.selectedProj];
-  if (ps && ps.charges >= 1) {
-    ctx.fillStyle = state.selectedProj === 'fire' ? '#ffb142' : '#ffffff';
-    ctx.beginPath(); ctx.arc(tx, ty - 2, 5, 0, Math.PI * 2); ctx.fill();
+  const hasAmmo = ps && ps.charges >= 1;
+
+  if (lid === 'cannon' || lid === 'railgun' || lid === 'tricannon') {
+    // Turret pedestal + rotating barrel(s)
+    const pivX = baseX + 8, pivY = baseY - 14;
+    ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.arc(pivX, baseY - 2, 13, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    ctx.save();
+    ctx.translate(pivX, pivY);
+    ctx.rotate(clamp(aimAng, -1.25, 0.2));
+    if (lid === 'cannon') {
+      ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(-8 - recoilShift, -7); ctx.lineTo(28 - recoilShift, -4.5);
+      ctx.lineTo(28 - recoilShift, 4.5); ctx.lineTo(-8 - recoilShift, 7);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillRect(26 - recoilShift, -6, 4, 12);
+    } else if (lid === 'railgun') {
+      ctx.strokeStyle = '#a5f3fc'; ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(-6 - recoilShift, -6); ctx.lineTo(36 - recoilShift, -4.5);
+      ctx.moveTo(-6 - recoilShift, 6); ctx.lineTo(36 - recoilShift, 4.5);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6;
+      for (let rx = 2; rx <= 28; rx += 8) {
+        ctx.beginPath(); ctx.moveTo(rx - recoilShift, -5.5); ctx.lineTo(rx - recoilShift, 5.5); ctx.stroke();
+      }
+      if (hasAmmo) {
+        ctx.fillStyle = '#a5f3fc';
+        ctx.beginPath(); ctx.arc(28 - recoilShift, 0, 3.2, 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      // tricannon: heavy triple naval turret
+      ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.2;
+      ctx.fillRect(-10, -10, 22, 20); ctx.strokeRect(-10, -10, 22, 20);
+      [-5.5, 0, 5.5].forEach((by) => {
+        ctx.beginPath();
+        ctx.moveTo(10 - recoilShift, by);
+        ctx.lineTo(36 - recoilShift, by);
+        ctx.stroke();
+      });
+    }
+    ctx.restore();
+  } else {
+    // Catapult / Trebuchet / Twin-arm frame
+    ctx.beginPath();
+    ctx.moveTo(baseX - 9, baseY - 5); ctx.lineTo(baseX + 24, baseY - 5);
+    const frameH = lid === 'trebuchet' ? 38 : 31;
+    ctx.moveTo(baseX + 3, baseY - 5); ctx.lineTo(baseX + 13, baseY - frameH); ctx.lineTo(baseX + 20, baseY - 5);
+    ctx.stroke();
+
+    ctx.fillStyle = '#0b0d10';
+    [baseX - 3, baseX + 20].forEach((wx) => {
+      ctx.beginPath(); ctx.arc(wx, baseY - 4, 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    });
+
+    let armAngle = -0.85;
+    if (state.aiming) armAngle = -0.85 - clamp(Math.hypot(state.aimVx, state.aimVy) / 1150, 0, 1) * 1.35;
+    else if (state.catapultRecoil > 0) armAngle = -0.85 + state.catapultRecoil * 0.95;
+
+    const px = baseX + 9, py = baseY - (lid === 'trebuchet' ? 20 : 11);
+    const armLen = lid === 'trebuchet' ? 40 : 34;
+    const tx = px + Math.cos(armAngle) * armLen;
+    const ty = py + Math.sin(armAngle) * armLen;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke();
+
+    if (lid === 'trebuchet') {
+      // Counterweight box on opposite end of lever
+      const cx = px - Math.cos(armAngle) * 13;
+      const cy = py - Math.sin(armAngle) * 13;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 5, cy - 4, 10, 10);
+    } else if (lid === 'twin') {
+      // Secondary parallel throwing arm
+      const tx2 = px + 6 + Math.cos(armAngle + 0.14) * 30;
+      const ty2 = py + Math.sin(armAngle + 0.14) * 30;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(px + 6, py); ctx.lineTo(tx2, ty2); ctx.stroke();
+      if (hasAmmo) {
+        ctx.fillStyle = state.selectedProj === 'fire' ? '#ffb142' : '#ffffff';
+        ctx.beginPath(); ctx.arc(tx2, ty2 - 2, 4, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    if (hasAmmo) {
+      ctx.fillStyle = state.selectedProj === 'fire' ? '#ffb142' : '#ffffff';
+      ctx.beginPath(); ctx.arc(tx, ty - 2, 5, 0, Math.PI * 2); ctx.fill();
+    }
   }
   ctx.restore();
 }
 
 function drawShieldDome() {
+  if (state.empTimer > 0 && !state.collapsing) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(165, 243, 252, 0.8)';
+    ctx.lineWidth = 1.6;
+    for (let a = 0; a < 3; a++) {
+      const sy = L.towerTopY + 20 + Math.random() * (L.seaY - L.towerTopY - 40);
+      ctx.beginPath();
+      ctx.moveTo(L.towerX - L.towerW * 0.45, sy);
+      ctx.lineTo(L.towerX + (Math.random() - 0.5) * 20, sy + (Math.random() - 0.5) * 18);
+      ctx.lineTo(L.towerX + L.towerW * 0.45, sy + (Math.random() - 0.5) * 14);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
   if (state.shieldTimer <= 0) return;
   ctx.save();
   const pulse = 0.85 + Math.sin(state.elapsed * 10) * 0.15;
@@ -3316,6 +3724,17 @@ function drawSeaFront() {
     if (x === -160) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
+
+  // Vertical Water Plume Columns
+  state.plumes.forEach((pl) => {
+    const a = clamp(pl.life / pl.maxLife, 0, 1);
+    ctx.fillStyle = `rgba(255,255,255,${0.55 * a})`;
+    ctx.beginPath();
+    ctx.moveTo(pl.x - pl.w * 0.5, pl.y);
+    ctx.quadraticCurveTo(pl.x, pl.y - pl.h * 1.4, pl.x + pl.w * 0.5, pl.y);
+    ctx.closePath();
+    ctx.fill();
+  });
 
   // Expanding Elliptical Water Ripple Rings
   state.ripples.forEach((rp) => {
@@ -3463,6 +3882,27 @@ function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks =
   const h = cfg.height;
   const hullFill = flash ? '#ffffff' : (cfg.boss ? '#10141c' : '#181e28');
 
+  if (cfg.air && cfg.heli) {
+    // Attack Gunship Helicopter with spinning rotor & nose gun
+    ctx.fillStyle = hullFill; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+    // Tail boom & tail rotor
+    ctx.beginPath(); ctx.moveTo(14, -4); ctx.lineTo(w * 0.5, -10); ctx.lineTo(w * 0.52, -2); ctx.lineTo(14, 4); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // Fuselage & cockpit canopy
+    ctx.beginPath(); ctx.ellipse(-8, 0, 28, 13, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(165,243,252,0.75)';
+    ctx.beginPath(); ctx.arc(-20, -2, 9, Math.PI * 0.7, Math.PI * 1.55); ctx.stroke();
+    // Spinning main rotor blur
+    const rotorW = 36 + Math.sin(state.elapsed * 55) * 14;
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(-8, -13); ctx.lineTo(-8, -22); ctx.moveTo(-8 - rotorW, -22); ctx.lineTo(-8 + rotorW, -22); ctx.stroke();
+    // Skids & nose turret
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(-24, 15); ctx.lineTo(10, 15); ctx.moveTo(-16, 11); ctx.lineTo(-16, 15); ctx.moveTo(2, 11); ctx.lineTo(2, 15); ctx.stroke();
+    (cfg.turrets || []).forEach((tr) => drawDeckTurret(tr.ox, tr.oy, tr.scale, windup, recoil));
+    ctx.restore();
+    return;
+  }
+
   if (cfg.air) {
     // Rigid Zeppelin Airship with dorsal tail fins & propeller
     ctx.fillStyle = hullFill;
@@ -3607,6 +4047,33 @@ function drawShipVisual(x, y, cfg, type, flash, tilt, alpha, crew = [], cracks =
     ctx.beginPath(); ctx.arc(-10, -h - 2, 5, 0, Math.PI * 2); ctx.arc(2, -h - 2, 5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,177,66,0.55)';
     ctx.beginPath(); ctx.arc(-26, -h - 6, 7 + Math.sin(state.elapsed * 16) * 2, 0, Math.PI * 2); ctx.fill();
+  } else if (type === 'suicideYacht') {
+    // Sleek High-Speed Kamikaze Speedboat with glowing explosive bow
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.56, -h + 4); ctx.lineTo(w * 0.46, -h - 2); ctx.lineTo(w * 0.5, 4); ctx.lineTo(-w * 0.36, 4);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff7675';
+    ctx.beginPath(); ctx.arc(-w * 0.35, -h + 2, 5.5 + Math.sin(state.elapsed * 22) * 1.5, 0, Math.PI * 2); ctx.fill();
+  } else if (type === 'miniTurretBoat') {
+    // Compact single-gunner motorized turret raft
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.5, -h); ctx.lineTo(w * 0.5, -h); ctx.lineTo(w * 0.38, 4); ctx.lineTo(-w * 0.38, 4);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if (type === 'carrier') {
+    // Heavy Pirate Transport Carrier with stern bay ramp & gantry
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.52, -h - 4); ctx.lineTo(-30, -h - 4); ctx.lineTo(-26, -h + 6); ctx.lineTo(26, -h + 6);
+    ctx.lineTo(30, -h - 10); ctx.lineTo(w * 0.5, -h - 10); ctx.lineTo(w * 0.42, 6); ctx.lineTo(-w * 0.42, 6);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.strokeRect(-22, -h - 6, 44, 12);
+  } else if (type === 'missileDestroyer') {
+    // Modern Monochrome Stealth Missile Destroyer with VLS Launch Cells
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.56, -h - 4); ctx.lineTo(-20, -h - 4); ctx.lineTo(-10, -h - 18); ctx.lineTo(24, -h - 18);
+    ctx.lineTo(32, -h - 6); ctx.lineTo(w * 0.5, -h - 6); ctx.lineTo(w * 0.4, 5); ctx.lineTo(-w * 0.42, 5);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    // VLS Silos + Radar Mast
+    ctx.beginPath(); ctx.moveTo(8, -h - 18); ctx.lineTo(8, -h - 42); ctx.moveTo(-2, -h - 34); ctx.lineTo(18, -h - 34); ctx.stroke();
   } else if (type === 'sub') {
     // Sleek Monochrome Submarine with Conning Tower & Periscope
     ctx.beginPath();
@@ -3686,6 +4153,36 @@ function drawEnemies() {
   state.enemies.forEach((e) => {
     const bobY = e.cfg.air ? Math.sin(e.bobPhase) * 6 : 0;
     drawShipVisual(e.x, e.y + bobY, e.cfg, e.type, e.hitFlash > 0, e.listAngle, 1, e.crew, e.cracks, e.windup, e.fireRecoil);
+    // Draw Armor Variants (鐵架船 / 骨架罩船) & Unmanned Auto-Turrets (1-5 pods)!
+    if (e.armorMod || (e.autoTurrets && e.autoTurrets.length)) {
+      ctx.save();
+      ctx.translate(e.x, e.y + bobY);
+      ctx.rotate(e.listAngle);
+      const hw = e.cfg.width * 0.52, hh = e.cfg.height;
+      if (e.armorMod === 'ironFrame') {
+        ctx.strokeStyle = 'rgba(255,255,255,0.72)'; ctx.lineWidth = 1.8;
+        ctx.strokeRect(-hw, -hh, hw * 2, hh + 2);
+        ctx.beginPath();
+        ctx.moveTo(-hw, -hh); ctx.lineTo(0, 2); ctx.moveTo(0, -hh); ctx.lineTo(hw, 2);
+        ctx.moveTo(hw, -hh); ctx.lineTo(0, 2); ctx.moveTo(0, -hh); ctx.lineTo(-hw, 2);
+        ctx.stroke();
+      } else if (e.armorMod === 'exoCage') {
+        ctx.strokeStyle = 'rgba(255,255,255,0.78)'; ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.ellipse(0, -hh * 0.65, hw * 1.06, hh * 1.15, 0, Math.PI, 0); ctx.stroke();
+        for (let rib = -2; rib <= 2; rib++) {
+          ctx.beginPath(); ctx.moveTo(rib * hw * 0.38, 2); ctx.lineTo(rib * hw * 0.28, -hh * 1.65); ctx.stroke();
+        }
+      }
+      if (e.autoTurrets && e.autoTurrets.length) {
+        e.autoTurrets.forEach((ut) => {
+          ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.arc(ut.ox, ut.oy - 5, 5.5, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(ut.ox - 5, ut.oy - 7); ctx.lineTo(ut.ox - 13, ut.oy - 9); ctx.stroke();
+          ctx.fillStyle = '#ff7675'; ctx.beginPath(); ctx.arc(ut.ox - 1, ut.oy - 7, 1.8, 0, Math.PI * 2); ctx.fill();
+        });
+      }
+      ctx.restore();
+    }
     if (e.freezeTimer > 0) {
       ctx.save();
       ctx.strokeStyle = 'rgba(165, 243, 252, 0.85)';
@@ -3822,6 +4319,16 @@ function drawProjectiles() {
       ctx.rotate(Math.atan2(ep.vy, ep.vx));
       ctx.strokeStyle = '#ff7675'; ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(10, 0); ctx.stroke();
+    } else if (ep.type === 'emp') {
+      ctx.fillStyle = '#0a1929'; ctx.strokeStyle = '#a5f3fc'; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.arc(0, 0, ep.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, ep.r + 3 + Math.sin(state.elapsed * 30) * 2, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(165,243,252,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+    } else if (ep.type === 'missile') {
+      ctx.rotate(Math.atan2(ep.vy, ep.vx));
+      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ff7675'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-9, -4); ctx.lineTo(-6, 0); ctx.lineTo(-9, 4); ctx.closePath();
+      ctx.fill(); ctx.stroke();
     } else {
       ctx.fillStyle = '#0b0d10'; ctx.strokeStyle = '#ff7675'; ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.arc(0, 0, ep.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -3993,7 +4500,7 @@ function drawAimTrajectory() {
   for (let step = 1; step <= 26; step++) {
     const t = step * 0.055;
     const px = sx + state.aimVx * t + 0.5 * getEffectiveWind() * t * t;
-    const py = sy + state.aimVy * t + 0.5 * GRAVITY * t * t;
+    const py = sy + state.aimVy * t + 0.5 * getEffectiveGravity() * t * t;
     if (py > L.seaY + 8 || px > L.worldW + 20) break;
     ctx.fillStyle = `rgba(255,255,255,${Math.max(0.12, 1 - step / 28)})`;
     ctx.beginPath(); ctx.arc(px, py, Math.max(1.8, 4.2 - step * 0.09), 0, Math.PI * 2); ctx.fill();
@@ -4108,6 +4615,7 @@ window.addEventListener('keydown', (e) => {
   else if (k === 'l') state.lbOpen ? closeLeaderboard() : openLeaderboard();
   else if (k === 'p') { if (!state.shopOpen && !state.lbOpen) togglePause(); }
   else if (k === 'm') toggleSound();
+  else if (k === 'f') toggleSpeed();
   else if (['1', '2', '3', '4', '5', '6', '7', '8'].includes(k)) {
     const def = PROJECTILE_DEFS[Number(k) - 1];
     if (def && state.projectiles[def.id].unlocked) { state.selectedProj = def.id; updateDockDisplays(); }
@@ -4124,6 +4632,12 @@ function togglePause() {
   }
   dom.pauseModal.classList.toggle('hidden', !state.paused);
   dom.pauseBtn.querySelector('.ico').innerHTML = state.paused ? ICONS.play : ICONS.pause;
+}
+
+function toggleSpeed() {
+  state.gameSpeed = state.gameSpeed === 1 ? 3 : 1;
+  saveProgress();
+  updateHud();
 }
 
 function toggleSound() {
@@ -4168,6 +4682,7 @@ dom.resumeBtn.addEventListener('click', togglePause);
 dom.pauseRestartBtn.addEventListener('click', restartGame);
 dom.restartBtn.addEventListener('click', restartGame);
 dom.soundBtn.addEventListener('click', toggleSound);
+dom.speedBtn.addEventListener('click', toggleSpeed);
 dom.cancelTargetBtn.addEventListener('click', cancelSkillTargeting);
 
 // ============================================================
@@ -4190,7 +4705,8 @@ function loop(ts) {
   const dt = Math.max(0, Math.min(0.05, (ts - lastTs) / 1000));
   lastTs = ts;
   try {
-    update(dt);
+    const steps = (state && state.gameSpeed === 3) ? 3 : 1;
+    for (let s = 0; s < steps; s++) update(dt);
     render();
   } catch (err) {
     console.error('[THROW] recovered frame error:', err);
