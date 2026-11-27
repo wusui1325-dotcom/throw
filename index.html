@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>THROW — 無盡投石守塔</title>
   <meta name="description" content="免費開源的物理破壞無盡投石守塔網頁遊戲。動態石塊碎裂滾壓、可破壞高塔結構、天氣風向物理、自動塔樓掛件與全球排行榜。" />
-  <link rel="stylesheet" href="style.css?v=2.10" />
+  <link rel="stylesheet" href="style.css?v=3.0" />
 </head>
 <body>
   <div id="app">
@@ -46,6 +46,11 @@
         <span id="killText" class="stat-val">0</span>
       </div>
 
+      <button id="speedBtn" class="action-pill" title="切換 1 倍 / 3 倍速 [F]">
+        <span class="ico" data-icon="speed"></span>
+        <span id="speedText" class="stat-val">1×</span>
+      </button>
+
       <button id="shopBtn" class="action-pill primary" title="商店（開啟時暫停時間）[S]">
         <span class="ico" data-icon="shop"></span>
         <span class="btn-label">商店</span>
@@ -85,6 +90,12 @@
     <div id="shieldBanner" class="shield-banner hidden">
       <span class="ico" data-icon="skill_shield"></span>
       <span id="shieldTimerText">護盾 5.0s</span>
+    </div>
+
+    <!-- EMP Disabled Indicator -->
+    <div id="empBanner" class="emp-banner hidden">
+      <span class="ico" data-icon="emp"></span>
+      <span id="empTimerText">EMP 癱瘓掛件 12.0s</span>
     </div>
 
     <!-- Skill Targeting Hint -->
@@ -130,6 +141,10 @@
           <button class="shop-tab active" data-tab="tower" role="tab">
             <span class="ico" data-icon="towerTab"></span>
             <span>塔的加固</span>
+          </button>
+          <button class="shop-tab" data-tab="launcher" role="tab">
+            <span class="ico" data-icon="launcherTab"></span>
+            <span>投擲器</span>
           </button>
           <button class="shop-tab" data-tab="projectile" role="tab">
             <span class="ico" data-icon="ammoTab"></span>
@@ -245,6 +260,6 @@
     </div>
   </div>
 
-  <script type="module" src="game.js?v=2.10"></script>
+  <script type="module" src="game.js?v=3.0"></script>
 </body>
 </html>
