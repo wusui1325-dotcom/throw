@@ -795,3 +795,31 @@ button.icon-pill:active {
 .modal-panel {
   animation: modalPop 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+.emp-banner {
+  position: fixed;
+  top: 170px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: var(--pill-radius);
+  background: rgba(10, 20, 32, 0.88);
+  color: #a5f3fc;
+  border: 1px solid rgba(165, 243, 252, 0.72);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  z-index: 22;
+  white-space: nowrap;
+  box-shadow: 0 0 20px rgba(165, 243, 252, 0.25);
+}
+.action-pill.speed-on {
+  background: #ffffff;
+  color: #0b0d10;
+  border-color: #ffffff;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+}
