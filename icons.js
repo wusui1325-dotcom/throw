@@ -7,6 +7,8 @@ export const ICONS = {
   shop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1.2 12.2a1.5 1.5 0 0 1-1.5 1.8H6.3a1.5 1.5 0 0 1-1.5-1.8L6 7z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg>`,
   pause: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 5v14M16 5v14"/></svg>`,
   play: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>`,
+  speed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 5 11 12 3 19 3 5"/><polygon points="13 5 21 12 13 19 13 5"/></svg>`,
+  emp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M13 6l-4 6h5l-3 6"/></svg>`,
   soundOn: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.8 5.5a9 9 0 0 1 0 13"/></svg>`,
   soundOff: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M22 9l-6 6M16 9l6 6"/></svg>`,
   restart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>`,
@@ -19,6 +21,7 @@ export const ICONS = {
 
   // Shop Tabs
   towerTab: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21h12M7 21V9l-1-2V4h3v2h2V4h2v2h2V4h3v3l-1 2v12"/><path d="M10 21v-5a2 2 0 0 1 4 0v5"/></svg>`,
+  launcherTab: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19l4-10 4 10M11 9L19 4"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="19" r="2"/><circle cx="19" cy="4" r="2"/></svg>`,
   ammoTab: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>`,
   skillTab: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.7 5.8 21 7 14.1 2 9.3 8.9 8.3 12 2"/></svg>`,
   addonTab: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
@@ -32,6 +35,14 @@ export const ICONS = {
   weather_mist: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h14M5 14h16M3 18h12M7 6h10"/></svg>`,
   weather_wind: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2M17.7 7.7A2.5 2.5 0 1 1 19.5 12H2"/></svg>`,
   weather_storm: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 16.9A5 5 0 0 0 18 7h-1.3a8 8 0 1 0-11.2 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>`,
+
+  // Launchers (6)
+  launcher_catapult: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M8 19l4-10 4 10M12 9L18 4"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>`,
+  launcher_trebuchet: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M7 20l5-14 5 14M6 12l13-7"/><rect x="4" y="12" width="4" height="5" rx="1"/></svg>`,
+  launcher_twin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19l4-9 4 9M9 11l8-6M12 13l8-5"/><circle cx="18" cy="5" r="1.5"/><circle cx="20" cy="8" r="1.5"/></svg>`,
+  launcher_cannon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17l11-8 3 4-11 8-3-4z"/><circle cx="7" cy="18" r="3"/><path d="M19 7l2-2"/></svg>`,
+  launcher_railgun: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16l15-9M5 19l15-9M9 13l2 3M14 10l2 3"/><circle cx="20" cy="7" r="2"/></svg>`,
+  launcher_tricannon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h12M6 19v-5h8v5M12 14l8-7M10 12l8-7M14 16l7-6"/></svg>`,
 
   // Tower Attachments (6)
   addon_ballista: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18L20 6M15 6h5v5M5 9c3 0 6 3 6 6M9 5c3 0 6 3 6 6"/></svg>`,
@@ -67,7 +78,7 @@ export const ICONS = {
   skill_lightning: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 4 14 11 14 9 22 20 10 13 10 13 2"/></svg>`,
   skill_slowmo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12M7 3v4l5 5 5-5V3M7 21v-4l5-5 5 5v4"/></svg>`,
 
-  // Tower Tiers (9)
+  // Tower Tiers (15 tiers!)
   tower_0: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21V7h10v14M5 21h14M7 11h10M7 15h10M11 7v14"/></svg>`,
   tower_1: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V6h3v2h2V6h2v2h2V6h3v15M4 21h16M6 12h12M6 16h12M12 12v4"/></svg>`,
   tower_2: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V6h12v15M4 21h16M6 10h12M6 15h12M6 10l12 5M18 10L6 15"/></svg>`,
@@ -77,4 +88,10 @@ export const ICONS = {
   tower_6: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V5h14v16M3 21h18M5 9h14M5 15h14M9 5v16M15 5v16M5 9l4 6M19 9l-4 6"/></svg>`,
   tower_7: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V7l3-4h8l3 4v14M3 21h18M8 7h8M8 11h8M10 15h4v6h-4z"/></svg>`,
   tower_8: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V6l3-3h10l3 3v15M2 21h20M7 6v15M17 6v15M7 10h10M7 15h10M10 15v6M14 15v6M12 3v7"/></svg>`,
+  tower_9: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21L7 4h10l3 17M2 21h20M8 9h8M7 14h10M12 4v17"/></svg>`,
+  tower_10: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l4-5h10l4 5v13M2 21h20M6 8h12M6 13h12M9 21v-8h6v8"/></svg>`,
+  tower_11: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21L7 3h10l2 18M3 21h18M7 7l10 5M17 7L7 12M7 13l10 5M17 13L7 18"/></svg>`,
+  tower_12: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V6l7-4 7 4v15M3 21h18"/><circle cx="12" cy="11" r="3"/><path d="M12 14v7"/></svg>`,
+  tower_13: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 19 7 20 21 4 21 5 7 12 2"/><path d="M9 11l3-3 3 3M9 16l3-3 3 3"/></svg>`,
+  tower_14: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l6 5 2 14H4L6 7l6-5z"/><circle cx="12" cy="9" r="2.5"/><path d="M12 12v9M8 15h8"/></svg>`,
 };
